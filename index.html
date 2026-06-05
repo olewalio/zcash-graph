@@ -5,659 +5,558 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Zcash (ZEC) — Relationship Graph</title>
 <style>
-* { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0f0f1a; color: #e0e0e0; }
-#login-screen {
-  position: fixed; inset: 0; background: #0f0f1a;
-  display: flex; align-items: center; justify-content: center; z-index: 9999;
-}
-#login-screen.hidden { display: none; }
-.login-box {
-  background: #1a1a2e; padding: 40px; border-radius: 12px; border: 1px solid #2a2a4a;
-  width: 340px; text-align: center;
-}
-.login-box h1 { color: #f7931a; font-size: 24px; margin-bottom: 8px; }
-.login-box p { color: #888; font-size: 14px; margin-bottom: 24px; }
-.login-box input {
-  width: 100%; padding: 12px 16px; border-radius: 8px; border: 1px solid #2a2a4a;
-  background: #0f0f1a; color: #e0e0e0; font-size: 16px; margin-bottom: 16px;
-}
-.login-box input:focus { outline: none; border-color: #f7931a; }
-.login-box button {
-  width: 100%; padding: 12px; border-radius: 8px; border: none;
-  background: #f7931a; color: #0f0f1a; font-size: 16px; font-weight: 600;
-  cursor: pointer; transition: opacity .2s;
-}
-.login-box button:hover { opacity: .9; }
-.login-box .error { color: #ff4444; font-size: 13px; margin-top: 8px; display: none; }
-#app { display: flex; flex-direction: column; height: 100vh; }
-#header {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 8px 16px; background: #1a1a2e; border-bottom: 1px solid #2a2a4a; flex-shrink: 0;
-}
-#header h2 { color: #f7931a; font-size: 16px; }
-#header .subtitle { color: #888; font-size: 11px; }
-#header .badge { background: #2a2a4a; padding: 4px 12px; border-radius: 12px; font-size: 11px; color: #aaa; }
-#main { display: flex; flex: 1; overflow: hidden; }
-#graph-container { flex: 1; position: relative; background: #0f0f1a; }
-#sidebar {
-  width: 400px; background: #1a1a2e; border-left: 1px solid #2a2a4a;
-  display: flex; flex-direction: column; overflow: hidden; flex-shrink: 0;
-}
-#sidebar .tabs { display: flex; border-bottom: 1px solid #2a2a4a; flex-shrink: 0; }
-#sidebar .tabs button {
-  flex: 1; padding: 8px 6px; background: none; border: none; color: #666;
-  cursor: pointer; font-size: 11px; transition: all .2s; border-bottom: 2px solid transparent;
-}
-#sidebar .tabs button.active { color: #f7931a; border-bottom-color: #f7931a; }
-#sidebar .tab-content { flex: 1; overflow-y: auto; padding: 12px; display: none; }
-#sidebar .tab-content.active { display: block; }
-#sidebar .tab-content h3 { color: #f7931a; font-size: 14px; margin-bottom: 8px; }
-#sidebar .tab-content h4 { color: #aaa; font-size: 11px; text-transform: uppercase; letter-spacing: .5px; margin: 10px 0 4px; }
-.detail-field { margin-bottom: 6px; }
-.detail-field .label { color: #666; font-size: 10px; text-transform: uppercase; letter-spacing: .5px; }
-.detail-field .value { color: #e0e0e0; font-size: 13px; margin-top: 1px; }
-.detail-field .value a { color: #4a9eff; text-decoration: none; }
-.detail-field .value a:hover { text-decoration: underline; }
-.relation-card {
-  background: #15152a; border: 1px solid #252545; border-radius: 6px; padding: 8px; margin-bottom: 6px;
-}
-.relation-card .target { color: #4a9eff; font-size: 13px; font-weight: 600; }
-.relation-card .type { color: #f7931a; font-size: 11px; }
-.relation-card .src { color: #666; font-size: 10px; margin-top: 3px; }
-.relation-card .src a { color: #4a9eff; text-decoration: none; }
-.relation-card .src a:hover { text-decoration: underline; }
-.timeline-item { padding: 6px 0; border-bottom: 1px solid #1a1a2e; }
-.timeline-item .year { color: #f7931a; font-size: 11px; font-weight: 600; }
-.timeline-item .event { color: #ccc; font-size: 12px; margin-top: 1px; }
-.empty-state { color: #555; font-size: 12px; text-align: center; padding: 30px 16px; }
-#controls {
-  position: absolute; top: 10px; right: 10px; display: flex; gap: 4px; z-index: 10;
-}
-#controls button {
-  background: #1a1a2e; border: 1px solid #2a2a4a; color: #ccc;
-  padding: 5px 10px; border-radius: 5px; cursor: pointer; font-size: 11px;
-}
-#controls button:hover { background: #2a2a4a; }
-#legend {
-  position: absolute; bottom: 12px; left: 12px; background: #1a1a2e;
-  border: 1px solid #2a2a4a; border-radius: 6px; padding: 8px 12px; z-index: 10;
-  font-size: 10px; opacity: .9;
-}
-#legend .row { display: flex; align-items: center; gap: 6px; margin: 2px 0; }
-#legend .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
-#legend .dot.person { background: #4a9eff; }
-#legend .dot.org { background: #f7931a; }
-#legend .dot.project { background: #7c3aed; }
-#legend .dot.investor { background: #10b981; }
-#legend .dot.integration { background: #ec4899; }
-#legend .dot.event { background: #f59e0b; }
-.loading {
-  position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
-  color: #555; font-size: 13px; z-index: 5;
-}
-.edge-label {
-  position: absolute; background: #1a1a2e; border: 1px solid #2a2a4a; border-radius: 6px;
-  padding: 6px 10px; font-size: 11px; color: #ddd; z-index: 20; pointer-events: none;
-  display: none; max-width: 260px;
-}
-@media (max-width: 768px) {
-  #main { flex-direction: column; }
-  #sidebar { width: 100%; height: 40vh; border-left: none; border-top: 1px solid #2a2a4a; }
-}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#0f0f1a;color:#e0e0e0}
+#login-screen{position:fixed;inset:0;background:#0f0f1a;display:flex;align-items:center;justify-content:center;z-index:9999}
+#login-screen.hidden{display:none}
+.login-box{background:#1a1a2e;padding:40px;border-radius:12px;border:1px solid #2a2a4a;width:340px;text-align:center}
+.login-box h1{color:#f7931a;font-size:24px;margin-bottom:8px}
+.login-box p{color:#888;font-size:14px;margin-bottom:24px}
+.login-box input{width:100%;padding:12px 16px;border-radius:8px;border:1px solid #2a2a4a;background:#0f0f1a;color:#e0e0e0;font-size:16px;margin-bottom:16px}
+.login-box input:focus{outline:none;border-color:#f7931a}
+.login-box button{width:100%;padding:12px;border-radius:8px;border:none;background:#f7931a;color:#0f0f1a;font-size:16px;font-weight:600;cursor:pointer}
+.login-box button:hover{opacity:.9}
+.login-box .error{color:#ff4444;font-size:13px;margin-top:8px;display:none}
+#app{display:flex;flex-direction:column;height:100vh}
+#header{display:flex;align-items:center;justify-content:space-between;padding:6px 14px;background:#1a1a2e;border-bottom:1px solid #2a2a4a;flex-shrink:0}
+#header h2{color:#f7931a;font-size:14px}
+#header .sub{color:#888;font-size:10px}
+#header .badge{background:#2a2a4a;padding:3px 10px;border-radius:10px;font-size:10px;color:#aaa}
+#main{display:flex;flex:1;overflow:hidden}
+#graph-container{flex:1;position:relative;background:#0f0f1a}
+#sidebar{width:420px;background:#1a1a2e;border-left:1px solid #2a2a4a;display:flex;flex-direction:column;overflow:hidden;flex-shrink:0}
+#sidebar .tabs{display:flex;border-bottom:1px solid #2a2a4a;flex-shrink:0}
+#sidebar .tabs button{flex:1;padding:7px 5px;background:none;border:none;color:#666;cursor:pointer;font-size:11px;border-bottom:2px solid transparent;transition:all .2s}
+#sidebar .tabs button.active{color:#f7931a;border-bottom-color:#f7931a}
+#sidebar .tab-content{flex:1;overflow-y:auto;padding:10px;display:none;font-size:12px}
+#sidebar .tab-content.active{display:block}
+#sidebar .tab-content h3{color:#f7931a;font-size:14px;margin-bottom:6px}
+#sidebar .tab-content h4{color:#aaa;font-size:11px;text-transform:uppercase;letter-spacing:.5px;margin:10px 0 4px}
+.df{margin-bottom:5px}
+.df .lbl{color:#666;font-size:10px;text-transform:uppercase;letter-spacing:.5px}
+.df .val{color:#e0e0e0;font-size:13px;margin-top:1px}
+.df .val a{color:#4a9eff;text-decoration:none}
+.df .val a:hover{text-decoration:underline}
+.rc{background:#15152a;border:1px solid #252545;border-radius:6px;padding:8px 10px;margin-bottom:6px}
+.rc .target{color:#4a9eff;font-size:13px;font-weight:600}
+.rc .desc{color:#ccc;font-size:12px;margin:3px 0}
+.rc .srclbl{color:#888;font-size:10px;margin-top:4px;display:block}
+.rc .src{color:#666;font-size:10px;margin-top:2px}
+.rc .src a{color:#4a9eff;text-decoration:none;margin-right:4px}
+.rc .src a:hover{text-decoration:underline}
+.tl{padding:5px 0;border-bottom:1px solid #1a1a2e}
+.tl .yr{color:#f7931a;font-size:11px;font-weight:600}
+.tl .ev{color:#ccc;font-size:12px;margin-top:1px}
+.empty-state{color:#555;font-size:12px;text-align:center;padding:30px 16px}
+#controls{position:absolute;top:8px;right:8px;display:flex;gap:3px;z-index:10}
+#controls button{background:#1a1a2e;border:1px solid #2a2a4a;color:#ccc;padding:4px 8px;border-radius:4px;cursor:pointer;font-size:10px}
+#controls button:hover{background:#2a2a4a}
+#legend{position:absolute;bottom:10px;left:10px;background:#1a1a2e;border:1px solid #2a2a4a;border-radius:5px;padding:6px 10px;z-index:10;font-size:9px;opacity:.9}
+#legend .row{display:flex;align-items:center;gap:5px;margin:1px 0}
+#legend .dot{width:7px;height:7px;border-radius:50%;display:inline-block}
+#legend .dot.person{background:#4a9eff}#legend .dot.org{background:#f7931a}#legend .dot.project{background:#7c3aed}
+#legend .dot.investor{background:#10b981}#legend .dot.integration{background:#ec4899}#legend .dot.event{background:#f59e0b}
+.loading{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#555;font-size:13px;z-index:5}
+#edge-popup{position:absolute;background:#15152a;border:1px solid #f7931a;border-radius:8px;padding:12px;z-index:100;display:none;max-width:380px;box-shadow:0 4px 20px rgba(0,0,0,.5)}
+#edge-popup .arrow{position:absolute;top:-6px;left:20px;width:10px;height:10px;background:#15152a;border-left:1px solid #f7931a;border-top:1px solid #f7931a;transform:rotate(45deg)}
+#edge-popup .ep-title{color:#f7931a;font-size:12px;font-weight:600;margin-bottom:4px}
+#edge-popup .ep-desc{color:#ccc;font-size:12px;margin-bottom:6px}
+#edge-popup .ep-src{color:#666;font-size:10px}
+#edge-popup .ep-src a{color:#4a9eff;text-decoration:none}
+@media(max-width:768px){#main{flex-direction:column}#sidebar{width:100%;height:40vh;border-left:none;border-top:1px solid #2a2a4a}}
 </style>
 </head>
 <body>
 
-<div id="login-screen">
-  <div class="login-box">
-    <h1>🔒 Zcash Graph</h1>
-    <p>Введите пароль для доступа</p>
-    <input type="password" id="password-input" placeholder="Пароль" autofocus>
-    <button onclick="checkPassword()">Войти</button>
-    <div class="error" id="login-error">Неверный пароль</div>
-  </div>
-</div>
+<div id="login-screen"><div class="login-box">
+<h1>🔒 Zcash Graph</h1>
+<p>Введите пароль для доступа</p>
+<input type="password" id="pw" placeholder="Пароль" autofocus>
+<button onclick="checkPw()">Войти</button>
+<div class="error" id="login-err">Неверный пароль</div>
+</div></div>
 
 <div id="app" style="display:none">
-  <div id="header">
-    <div>
-      <h2>⛓️ Zcash (ZEC) — Relationship Graph</h2>
-      <div class="subtitle">Полный граф связей экосистемы Zcash</div>
-    </div>
-    <div class="badge">🔒 Private</div>
-  </div>
-  <div id="main">
-    <div id="graph-container">
-      <div class="loading" id="loading">Загрузка графа...</div>
-      <div id="controls">
-        <button onclick="zoomIn()">➕</button>
-        <button onclick="zoomOut()">➖</button>
-        <button onclick="zoomFit()">⊞ Fit</button>
-        <button onclick="resetView()">⟲ Reset</button>
-      </div>
-      <div id="legend">
-        <div class="row"><span class="dot person"></span> Person</div>
-        <div class="row"><span class="dot org"></span> Organization</div>
-        <div class="row"><span class="dot project"></span> Project/Fork</div>
-        <div class="row"><span class="dot investor"></span> Investor</div>
-        <div class="row"><span class="dot integration"></span> Integration</div>
-        <div class="row"><span class="dot event"></span> Event</div>
-      </div>
-    </div>
-    <div id="sidebar">
-      <div class="tabs">
-        <button class="active" onclick="switchTab('entity')">📋 Entity</button>
-        <button onclick="switchTab('relations')">🔗 Relations</button>
-        <button onclick="switchTab('sources')">📚 Sources</button>
-        <button onclick="switchTab('timeline')">📅 Timeline</button>
-      </div>
-      <div class="tab-content active" id="tab-entity">👆 Click any node on the graph</div>
-      <div class="tab-content" id="tab-relations">👆 Click a node to see its relations</div>
-      <div class="tab-content" id="tab-sources">👆 Click a node to see sources</div>
-      <div class="tab-content" id="tab-timeline"></div>
-    </div>
-  </div>
+<div id="header"><div><h2>⛓️ Zcash (ZEC) — Relationship Graph</h2><div class="sub">63 взаимосвязи с источниками</div></div><div class="badge">🔒 Private</div></div>
+<div id="main">
+<div id="graph-container">
+<div class="loading" id="loading">Загрузка графа...</div>
+<div id="controls"><button onclick="zoomIn()">➕</button><button onclick="zoomOut()">➖</button><button onclick="zoomFit()">⊞ Fit</button><button onclick="resetView()">⟲ Reset</button></div>
+<div id="legend">
+<div class="row"><span class="dot person"></span>Person</div><div class="row"><span class="dot org"></span>Org</div>
+<div class="row"><span class="dot project"></span>Fork</div><div class="row"><span class="dot investor"></span>Investor</div>
+<div class="row"><span class="dot integration"></span>Integration</div><div class="row"><span class="dot event"></span>Event</div>
 </div>
+<div id="edge-popup"><div class="arrow"></div><div class="ep-title"></div><div class="ep-desc"></div><div class="ep-src"></div></div>
+</div>
+<div id="sidebar">
+<div class="tabs"><button class="active" onclick="switchTab('entity')">📋 Entity</button><button onclick="switchTab('relations')">🔗 Relations</button><button onclick="switchTab('sources')">📚 Sources</button><button onclick="switchTab('timeline')">📅 Timeline</button></div>
+<div class="tab-content active" id="tab-entity"><div class="empty-state">👆 Click any node on the graph</div></div>
+<div class="tab-content" id="tab-relations"><div class="empty-state">👆 Click a node to see relations</div></div>
+<div class="tab-content" id="tab-sources"><div class="empty-state">👆 Click a node to see sources</div></div>
+<div class="tab-content" id="tab-timeline"></div>
+</div>
+</div></div>
 
 <script src="https://unpkg.com/vis-data@7.1.4/standalone/umd/vis-data.min.js"></script>
 <script src="https://unpkg.com/vis-network@9.1.6/standalone/umd/vis-network.min.js"></script>
 <script>
-const CORRECT_PASSWORD = 'zec2025';
-
-function checkPassword() {
-  const pw = document.getElementById('password-input').value;
-  if (pw === CORRECT_PASSWORD) {
+const PW = 'zec2025';
+function checkPw(){
+  if(document.getElementById('pw').value===PW){
     document.getElementById('login-screen').classList.add('hidden');
-    document.getElementById('app').style.display = 'flex';
-    initGraph();
-    showTimeline();
-  } else {
-    document.getElementById('login-error').style.display = 'block';
-  }
+    document.getElementById('app').style.display='flex';initGraph();showTimeline();
+  }else document.getElementById('login-err').style.display='block';
 }
-document.getElementById('password-input').addEventListener('keydown', e => { if (e.key === 'Enter') checkPassword(); });
+document.getElementById('pw').addEventListener('keydown',e=>{if(e.key==='Enter')checkPw()});
 
-// ===== NODE DATA =====
-const nodesData = [
-  // Persons
-  { id:'zooko', label:'Zooko\nWilcox-O\'Hearn', g:'person', desc:'Founder of Zcash / Electric Coin Company' },
-  { id:'mgreen', label:'Matthew D.\nGreen', g:'person', desc:'Prof @ JHU, Zerocoin co-author' },
-  { id:'imiers', label:'Ian Miers', g:'person', desc:'Zerocoin → Zcash co-founder' },
-  { id:'cgarman', label:'Christina\nGarman', g:'person', desc:'Zerocoin → Zcash co-founder' },
-  { id:'achiesa', label:'Alessandro\nChiesa', g:'person', desc:'zk-SNARKs, MIT → UC Berkeley' },
-  { id:'ebensasson', label:'Eli\nBen-Sasson', g:'person', desc:'zk-SNARKs → founded StarkWare' },
-  { id:'jswihart', label:'Josh\nSwihart', g:'person', desc:'ex-CEO ECC → ZODL founder' },
-  { id:'ckomlo', label:'Chelsea\nKomlo', g:'person', desc:'Chief Scientist @ ECC → ZODL' },
-  { id:'sbowe', label:'Sean Bowe', g:'person', desc:'Invented Halo zk-proof' },
-  { id:'snowden', label:'Edward\nSnowden', g:'person', desc:'Trusted setup participant (anon)' },
-  { id:'ptodd', label:'Peter Todd', g:'person', desc:'Bitcoin Core dev, trusted setup' },
-  { id:'naval', label:'Naval\nRavikant', g:'person', desc:'Angel investor $3M+ in Zcash Company' },
-  { id:'balaji', label:'Balaji\nSrinivasan', g:'person', desc:'Angel investor ZODL, ex-CTO Coinbase' },
-  { id:'winklevoss', label:'Winklevoss\ntwins', g:'person', desc:'Gemini founders, investors $50M CYPH' },
-
-  // Organizations
-  { id:'ecc', label:'Electric Coin\nCompany (ECC)', g:'org', desc:'Core Zcash development (for-profit)' },
-  { id:'bootstrap', label:'Bootstrap\nProject', g:'org', desc:'Nonprofit 501(c)(3), owned ECC' },
-  { id:'zfoundation', label:'Zcash\nFoundation', g:'org', desc:'Nonprofit, zebra node development' },
-  { id:'zodl', label:'ZODL', g:'org', desc:'Zcash Open Development Lab (new core team)' },
-  { id:'cypherpunk', label:'Cypherpunk\nTechnologies', g:'org', desc:'Public ZEC treasury, ~1.7% supply' },
-  { id:'foundry', label:'Foundry', g:'org', desc:'Mining pool (DCG subsidiary)' },
-  { id:'viabtc', label:'ViaBTC', g:'org', desc:'Mining pool >50% hashrate (2023)' },
-
-  // Integrations
-  { id:'jpmorgan', label:'JPMorgan\nChase', g:'integration', desc:'zk-proofs in Quorum blockchain' },
-  { id:'gemini', label:'Gemini', g:'integration', desc:'Exchange, NYDFS approved ZEC listing' },
-  { id:'near', label:'NEAR\nProtocol', g:'integration', desc:'Cross-chain swaps via Intents' },
-  { id:'cake', label:'Cake Wallet', g:'integration', desc:'ZEC shielded transaction support' },
-  { id:'swapkit', label:'SwapKit /\nMaya Protocol', g:'integration', desc:'Non-custodial ZEC cross-chain swaps' },
-  { id:'zprotocol', label:'Z Protocol /\nCore', g:'integration', desc:'Satoshi Plus consensus integration' },
-  { id:'humanrights', label:'Human Rights\nFoundation', g:'integration', desc:'Accepts ZEC donations' },
-  { id:'freedompress', label:'Freedom of the\nPress Foundation', g:'integration', desc:'Accepts ZEC donations' },
-  { id:'eff', label:'EFF', g:'integration', desc:'Electronic Frontier Foundation, accepts ZEC' },
-  { id:'grayscale', label:'Grayscale\nZcash Trust', g:'integration', desc:'Investment trust, filed for ETF conversion' },
-
-  // Investors
-  { id:'paradigm', label:'Paradigm', g:'investor', desc:'ZODL seed round investor' },
-  { id:'a16z', label:'a16z crypto', g:'investor', desc:'ZODL seed round investor' },
-  { id:'coinbasev', label:'Coinbase\nVentures', g:'investor', desc:'ZODL seed round investor' },
-  { id:'winklevoss_cap', label:'Winklevoss\nCapital', g:'investor', desc:'ZODL seed round investor' },
-  { id:'maelstrom', label:'Maelstrom', g:'investor', desc:'ZODL seed round investor' },
-  { id:'chapterone', label:'Chapter One', g:'investor', desc:'ZODL seed round investor' },
-  { id:'dragonfly', label:'Dragonfly\nCapital', g:'investor', desc:'Haseeb Qureshi, ZODL angel' },
-
-  // Projects/Forks
-  { id:'ycash', label:'Ycash', g:'project', desc:'Zcash fork (Jul 2020), fair distribution' },
-  { id:'hush', label:'Hush', g:'project', desc:'Zcash fork, aggressive privacy' },
-  { id:'pirate', label:'Pirate Chain\n(ARRR)', g:'project', desc:'Mandatory shielded, Komodo→Zcash' },
-  { id:'cashz', label:'cashZ', g:'project', desc:'Wallet by ex-ECC team (2026)' },
-
-  // Events
-  { id:'ev_zerocoin', label:'Zerocoin\nProtocol', g:'event', desc:'2013 — Johns Hopkins University' },
-  { id:'ev_zksnarks', label:'zk-SNARKs\nDeveloped', g:'event', desc:'2013-2014 — MIT + Technion' },
-  { id:'ev_mainnet', label:'Zcash\nMainnet', g:'event', desc:'Oct 2016 — Launch' },
-  { id:'ev_sec', label:'SEC\nInvestigation\nClosed', g:'event', desc:'Jan 2026 — No action' },
-  { id:'ev_split', label:'ECC Core\nTeam Exit', g:'event', desc:'Jan 2026 — Bootstrap conflict' },
-  { id:'ev_zodl_seed', label:'ZODL Seed\n$25M', g:'event', desc:'Mar 2026' },
-  { id:'ev_foundry', label:'Foundry\nMining Pool', g:'event', desc:'Apr 2026' },
-  { id:'ev_zooko_exit', label:'Zooko\nSteps Down', g:'event', desc:'Dec 2023' },
-  { id:'ev_gemini_list', label:'Gemini\nListing', g:'event', desc:'May 2018 — NYDFS approved' },
+const NODES = [
+  {id:'zooko',l:'Zooko\nWilcox',g:'person',d:'Founder of Zcash / Electric Coin Company. Worked with David Chaum at DigiCash.'},
+  {id:'mgreen',l:'Matthew D.\nGreen',g:'person',d:'Professor @ JHU. Co-author of Zerocoin protocol (academic precursor to Zcash).'},
+  {id:'imiers',l:'Ian Miers',g:'person',d:'Graduate student @ JHU, co-authored Zerocoin, co-founded Zcash.'},
+  {id:'cgarman',l:'Christina\nGarman',g:'person',d:'Graduate student @ JHU, co-authored Zerocoin, co-founded Zcash.'},
+  {id:'achiesa',l:'Alessandro\nChiesa',g:'person',d:'MIT → UC Berkeley. Co-architect of zk-SNARKs. MIT Innovators Under 35.'},
+  {id:'ebensasson',l:'Eli\nBen-Sasson',g:'person',d:'Technion professor. zk-SNARKs → later founded StarkWare Industries.'},
+  {id:'jswihart',l:'Josh\nSwihart',g:'person',d:'ex-CEO of ECC (Dec 2023 — Jan 2026). Founder & CEO of ZODL.'},
+  {id:'ckomlo',l:'Chelsea\nKomlo',g:'person',d:'Chief Scientist @ ECC, moved to ZODL in Jan 2026.'},
+  {id:'sbowe',l:'Sean Bowe',g:'person',d:'ECC researcher, invented Halo (2019) — zk-proof without trusted setup.'},
+  {id:'snowden',l:'Edward\nSnowden',g:'person',d:'Participated in Zcash trusted setup under pseudonym John Dobbertin.'},
+  {id:'ptodd',l:'Peter Todd',g:'person',d:'Bitcoin Core developer, participated in Zcash trusted setup ceremony.'},
+  {id:'naval',l:'Naval\nRavikant',g:'person',d:'Angel investor. Invested $3M+ in Zcash Company seed round (2015-2016).'},
+  {id:'balaji',l:'Balaji\nSrinivasan',g:'person',d:'Angel investor in ZODL seed round. Former CTO of Coinbase.'},
+  {id:'winklevoss',l:'Winklevoss\ntwins',g:'person',d:'Gemini founders. Invested $50M in Cypherpunk Technologies. Backed ZODL.'},
+  {id:'ecc',l:'Electric Coin\nCo. (ECC)',g:'org',d:'For-profit core Zcash developer. 50+ employees. All devs left Jan 2026.'},
+  {id:'bootstrap',l:'Bootstrap\nProject',g:'org',d:'Nonprofit 501(c)(3) that owned ECC from 2020. Changed employment terms in 2025 causing team exodus.'},
+  {id:'zfoundation',l:'Zcash\nFoundation',g:'org',d:'Nonprofit developing zebra (Rust node). Receives 5% block reward.'},
+  {id:'zodl',l:'ZODL',g:'org',d:'Zcash Open Development Lab. New core team founded Mar 2026 by ex-ECC team. Raised $25M.'},
+  {id:'cypherpunk',l:'Cypherpunk\nTech (CYPH)',g:'org',d:'Public ZEC treasury company. Accumulated ~1.7% of circulating supply. Ticker: CYPH.'},
+  {id:'foundry',l:'Foundry',g:'org',d:'Mining pool operator (DCG subsidiary). Launched ZEC mining pool Apr 2026.'},
+  {id:'viabtc',l:'ViaBTC',g:'org',d:'Mining pool. Captured >50% of Zcash hashrate in Sep 2023, prompting Coinbase to limit deposits.'},
+  {id:'jpmorgan',l:'JPMorgan\nChase',g:'integration',d:'Integrated Zcash zk-proofs into Quorum blockchain in 2017.'},
+  {id:'gemini',l:'Gemini',g:'integration',d:'Crypto exchange founded by Winklevoss twins. NYDFS approved ZEC listing May 2018.'},
+  {id:'near',l:'NEAR\nProtocol',g:'integration',d:'Cross-chain swaps via NEAR Intents. $600M+ ZEC swap volume since Oct 2025.'},
+  {id:'cake',l:'Cake Wallet',g:'integration',d:'Mobile wallet supporting XMR/ZEC. Added ZEC shielded tx support Jan 2026.'},
+  {id:'swapkit',l:'SwapKit /\nMaya',g:'integration',d:'Non-custodial ZEC cross-chain swap infrastructure.'},
+  {id:'zprotocol',l:'Z Protocol /\nCore',g:'integration',d:'Integration of Satoshi Plus consensus mechanism on Zcash (Mar 2026).'},
+  {id:'humanrights',l:'Human Rights\nFoundation',g:'integration',d:'Accepts Zcash donations for privacy advocacy.'},
+  {id:'freedompress',l:'Freedom of the\nPress',g:'integration',d:'Accepts Zcash donations. Advocacy for press freedom.'},
+  {id:'eff',l:'EFF',g:'integration',d:'Electronic Frontier Foundation. Accepts Zcash donations.'},
+  {id:'grayscale',l:'Grayscale\nZcash Trust',g:'integration',d:'Investment trust launched 2017. Filed for ETF conversion in 2026.'},
+  {id:'paradigm',l:'Paradigm',g:'investor',d:'Crypto VC. Participated in ZODL $25M seed round (Mar 2026).'},
+  {id:'a16z',l:'a16z crypto',g:'investor',d:'Major crypto VC. Participated in ZODL $25M seed round.'},
+  {id:'coinbasev',l:'Coinbase\nVentures',g:'investor',d:'Corporate VC. Participated in ZODL seed round.'},
+  {id:'winklevoss_cap',l:'Winklevoss\nCapital',g:'investor',d:'Family office / VC of Winklevoss twins. Participated in ZODL seed round.'},
+  {id:'maelstrom',l:'Maelstrom',g:'investor',d:'VC (Arthur Hayes fund). Participated in ZODL seed round.'},
+  {id:'chapterone',l:'Chapter One',g:'investor',d:'Early-stage VC. Participated in ZODL seed round.'},
+  {id:'dragonfly',l:'Dragonfly\nCapital',g:'investor',d:'Crypto VC. Managing partner Haseeb Qureshi as angel in ZODL.'},
+  {id:'ycash',l:'Ycash',g:'project',d:'Zcash fork at block 570,000 (Jul 2020). Removed 20% dev fee. 21M supply.'},
+  {id:'hush',l:'Hush',g:'project',d:'Zcash fork focused on enhanced privacy features.'},
+  {id:'pirate',l:'Pirate Chain\n(ARRR)',g:'project',d:'Mandatory shielded transactions. Fork of Komodo, which is Zcash-derivative.'},
+  {id:'cashz',l:'cashZ',g:'project',d:'New privacy wallet project by ex-ECC team (2026).'},
+  {id:'ev_zerocoin',l:'Zerocoin\nProtocol',g:'event',d:'2013 — Johns Hopkins University. Academic precursor to Zcash.'},
+  {id:'ev_zksnarks',l:'zk-SNARKs\nDeveloped',g:'event',d:'2013-2014 — MIT + Technion + UC Berkeley. Core privacy tech for Zcash.'},
+  {id:'ev_mainnet',l:'Zcash\nMainnet',g:'event',d:'Oct 28, 2016 — Launch. Block reward: 3.125 ZEC. Block time: 75s post-Blossom.'},
+  {id:'ev_sec',l:'SEC Closed\nInvestigation',g:'event',d:'Jan 2026 — SEC closed Zcash investigation with no action taken.'},
+  {id:'ev_split',l:'ECC Team\nExit',g:'event',d:'Jan 2026 — Entire ECC dev team left due to Bootstrap employment terms conflict.'},
+  {id:'ev_zodl_seed',l:'ZODL $25M\nSeed',g:'event',d:'Mar 2026 — ZODL raised $25M from Paradigm, a16z, Coinbase Ventures, et al.'},
+  {id:'ev_foundry',l:'Foundry Pool\nLaunched',g:'event',d:'Apr 2026 — Foundry (DCG) launched Zcash mining pool.'},
+  {id:'ev_zooko_exit',l:'Zooko Steps\nDown',g:'event',d:'Dec 2023 — Zooko Wilcox stepped down as ECC CEO.'},
+  {id:'ev_gemini_list',l:'Gemini ZEC\nListing',g:'event',d:'May 2018 — Gemini listed ZEC with NYDFS regulatory approval.'},
 ];
 
-// ===== EDGE DATA with sources =====
-// Each edge: { from, to, label, sources: [url1, url2, ...] }
-const edgesDef = [
-  // ---- FOUNDING / CORE ----
-  { from:'zooko', to:'ecc', label:'Founder & ex-CEO',
-    sources:['https://en.wikipedia.org/wiki/Zooko_Wilcox-O%27Hearn','https://en.wikipedia.org/wiki/Zcash'] },
-  { from:'mgreen', to:'ecc', label:'Co-creator Zerocoin',
-    sources:['https://en.wikipedia.org/wiki/Zcash','https://fortune.com/2017/12/18/jp-morgan-bitcoin-zcash-wilcox/'] },
-  { from:'imiers', to:'ecc', label:'Co-creator Zerocoin',
-    sources:['https://en.wikipedia.org/wiki/Zcash'] },
-  { from:'cgarman', to:'ecc', label:'Co-creator Zerocoin',
-    sources:['https://en.wikipedia.org/wiki/Zcash'] },
-  { from:'achiesa', to:'ecc', label:'zk-SNARKs architect',
-    sources:['https://en.wikipedia.org/wiki/Zcash','https://www.technologyreview.com/2018/08/15/1422/innovators-under-35-alessandro-chiesa/'] },
-  { from:'ebensasson', to:'ecc', label:'zk-SNARKs team → StarkWare',
-    sources:['https://en.wikipedia.org/wiki/Zcash','https://starkware.co/'] },
-  { from:'sbowe', to:'ecc', label:'Researcher, Halo inventor',
-    sources:['https://en.wikipedia.org/wiki/Zcash','https://electriccoin.co/blog/halo-recursive-proof-composition-without-a-trusted-setup/'] },
+// EDGES: from, to, label, desc (пояснение о связи), sources (min 2)
+const EDGES = [
+  // --- FOUNDING ---
+  {from:'zooko',to:'ecc',l:'Founder & ex-CEO',
+    d:'Zooko Wilcox-O\'Hearn основал Zcash Company (позже ECC) в 2015 и был CEO до декабря 2023. Он привёл в проект команду криптографов из JHU, MIT и Technion.',
+    s:['https://en.wikipedia.org/wiki/Zooko_Wilcox-O%27Hearn','https://en.wikipedia.org/wiki/Zcash']},
+  {from:'mgreen',to:'ecc',l:'Zerocoin → Zcash',
+    d:'Мэттью Грин (Prof. @ JHU) со своим студентами создал протокол Zerocoin в 2013 — академическую основу для Zcash. Без Zerocoin не было бы Zcash.',
+    s:['https://en.wikipedia.org/wiki/Zcash','https://fortune.com/2017/12/18/jp-morgan-bitcoin-zcash-wilcox/']},
+  {from:'imiers',to:'ecc',l:'Zerocoin co-author',
+    d:'Иэн Мирс, будучи аспирантом JHU, со-автор Zerocoin (2013) и со-основатель Zcash. Ключевой участник ранней команды.',
+    s:['https://en.wikipedia.org/wiki/Zcash']},
+  {from:'cgarman',to:'ecc',l:'Zerocoin co-author',
+    d:'Кристина Гарман, аспирантка JHU, со-автор Zerocoin (2013) и участник команды основателей Zcash.',
+    s:['https://en.wikipedia.org/wiki/Zcash']},
+  {from:'achiesa',to:'ecc',l:'zk-SNARKs co-architect',
+    d:'Алессандро Кьеза (MIT → UC Berkeley) разработал более эффективную версию zk-SNARKs, которая стала криптографической основой приватных транзакций Zcash.',
+    s:['https://en.wikipedia.org/wiki/Zcash','https://www.technologyreview.com/2018/08/15/1422/innovators-under-35-alessandro-chiesa/']},
+  {from:'ebensasson',to:'ecc',l:'zk-SNARKs team',
+    d:'Эли Бен-Сассон (Technion) участвовал в разработке zk-SNARKs для Zcash. Позже основал StarkWare (STARK proof system, StarkNet).',
+    s:['https://en.wikipedia.org/wiki/Zcash','https://starkware.co/']},
+  {from:'sbowe',to:'ecc',l:'Halo inventor',
+    d:'Шон Боу, исследователь ECC, изобрёл Halo (2019) — систему zero-knowledge proof, не требующую trusted setup. Ключевой технический вклад в развитие Zcash.',
+    s:['https://en.wikipedia.org/wiki/Zcash','https://electriccoin.co/blog/halo-recursive-proof-composition-without-a-trusted-setup/']},
 
-  // ---- ECC → ORGANIZATIONS ----
-  { from:'ecc', to:'bootstrap', label:'Subsidiary since 2020',
-    sources:['https://en.wikipedia.org/wiki/Zcash','https://www.ainvest.com/news/zcash-ecosystem-fragmentation-rise-cashz-organizational-structure-scalability-investor-trust-2601/'] },
-  { from:'ecc', to:'zodl', label:'Core team moved →',
-    sources:['https://www.coindesk.com/business/2026/03/09/josh-swihart-s-zcash-open-development-lab-raises-usd25-million-in-seed-funding','https://cointelegraph.com/news/zodl-raises-25m-push-zcash-following-ecc-split'] },
-  { from:'ecc', to:'zfoundation', label:'Separate orgs',
-    sources:['https://en.wikipedia.org/wiki/Zcash','https://zfnd.org/'] },
-  { from:'ecc', to:'ev_split', label:'Team exit (Jan 2026)',
-    sources:['https://www.ainvest.com/news/zcash-ecosystem-fragmentation-rise-cashz-organizational-structure-scalability-investor-trust-2601/','https://www.coindesk.com/business/2026/03/09/josh-swihart-s-zcash-open-development-lab-raises-usd25-million-in-seed-funding'] },
+  // --- ECC RELATIONS ---
+  {from:'ecc',to:'bootstrap',l:'ECC subsidiary of Bootstrap (2020)',
+    d:'В 2020 году ECC стала дочерней 501(c)(3) организацией Bootstrap Project. Bootstrap контролировал миссию и финансирование. В 2025 Bootstrap изменил условия труда, что привело к уходу всей core-команды.',
+    s:['https://en.wikipedia.org/wiki/Zcash','https://www.ainvest.com/news/zcash-ecosystem-fragmentation-rise-cashz-organizational-structure-scalability-investor-trust-2601/']},
+  {from:'ecc',to:'zodl',l:'Core team → ZODL',
+    d:'После конфликта с Bootstrap в январе 2026 вся инженерная команда ECC (включая CEO и Chief Scientist) уволилась и основала ZODL — новую организацию для разработки Zcash. ECC осталась без разработчиков.',
+    s:['https://www.coindesk.com/business/2026/03/09/josh-swihart-s-zcash-open-development-lab-raises-usd25-million-in-seed-funding','https://cointelegraph.com/news/zodl-raises-25m-push-zcash-following-ecc-split']},
+  {from:'ecc',to:'zfoundation',l:'Separate orgs',
+    d:'Zcash Foundation — независимая некоммерческая организация, занимающаяся разработкой zebra (Rust-нода Zcash). Получает 5% block reward. Не является частью ECC.',
+    s:['https://en.wikipedia.org/wiki/Zcash','https://zfnd.org/']},
+  {from:'ecc',to:'ev_split',l:'Team exit cause',
+    d:'В январе 2026 вся core-команда ECC уволилась из-за конфликта с Bootstrap, который изменил условия employment terms. Это крупнейший организационный кризис в истории Zcash.',
+    s:['https://www.ainvest.com/news/zcash-ecosystem-fragmentation-rise-cashz-organizational-structure-scalability-investor-trust-2601/','https://www.coindesk.com/business/2026/03/09/josh-swihart-s-zcash-open-development-lab-raises-usd25-million-in-seed-funding']},
 
-  // ---- ZODL ----
-  { from:'jswihart', to:'zodl', label:'Founder & CEO',
-    sources:['https://www.coindesk.com/business/2026/03/09/josh-swihart-s-zcash-open-development-lab-raises-usd25-million-in-seed-funding','https://cointelegraph.com/news/zodl-raises-25m-push-zcash-following-ecc-split'] },
-  { from:'jswihart', to:'ecc', label:'ex-CEO (Dec 2023 — Jan 2026)',
-    sources:['https://cointelegraph.com/news/zodl-raises-25m-push-zcash-following-ecc-split','https://en.wikipedia.org/wiki/Zcash'] },
-  { from:'ckomlo', to:'zodl', label:'Moved from ECC',
-    sources:['https://www.ainvest.com/news/zcash-ecosystem-fragmentation-rise-cashz-organizational-structure-scalability-investor-trust-2601/','https://www.coindesk.com/business/2026/03/09/josh-swihart-s-zcash-open-development-lab-raises-usd25-million-in-seed-funding'] },
-  { from:'ckomlo', to:'ecc', label:'ex-Chief Scientist',
-    sources:['https://www.ainvest.com/news/zcash-ecosystem-fragmentation-rise-cashz-organizational-structure-scalability-investor-trust-2601/','https://electriccoin.co/'] },
+  // --- ZODL ---
+  {from:'jswihart',to:'zodl',l:'Founder & CEO of ZODL',
+    d:'Джош Свихарт, после ухода с поста CEO ECC, основал ZODL (Zcash Open Development Lab) в марте 2026. Привлёк $25M seed funding от ведущих крипто-фондов.',
+    s:['https://www.coindesk.com/business/2026/03/09/josh-swihart-s-zcash-open-development-lab-raises-usd25-million-in-seed-funding','https://cointelegraph.com/news/zodl-raises-25m-push-zcash-following-ecc-split']},
+  {from:'jswihart',to:'ecc',l:'ex-CEO of ECC',
+    d:'Джош Свихарт был CEO ECC с декабря 2023 по январь 2026. Ушёл из-за конфликта с Bootstrap по условиям труда и основал ZODL.',
+    s:['https://cointelegraph.com/news/zodl-raises-25m-push-zcash-following-ecc-split','https://en.wikipedia.org/wiki/Zcash']},
+  {from:'ckomlo',to:'zodl',l:'Chief Scientist → ZODL',
+    d:'Челси Комло, бывший Chief Scientist ECC, перешла в ZODL вместе со всей командой разработки в январе 2026.',
+    s:['https://www.ainvest.com/news/zcash-ecosystem-fragmentation-rise-cashz-organizational-structure-scalability-investor-trust-2601/','https://www.coindesk.com/business/2026/03/09/josh-swihart-s-zcash-open-development-lab-raises-usd25-million-in-seed-funding']},
+  {from:'ckomlo',to:'ecc',l:'ex-Chief Scientist',
+    d:'Работала Chief Scientist в ECC до ухода в ZODL в январе 2026. Ведущий исследователь в области криптографии.',
+    s:['https://www.ainvest.com/news/zcash-ecosystem-fragmentation-rise-cashz-organizational-structure-scalability-investor-trust-2601/','https://electriccoin.co/']},
 
-  // ---- CYPHERPUNK TECHNOLOGIES ----
-  { from:'winklevoss', to:'cypherpunk', label:'$50M investment & founders',
-    sources:['https://en.wikipedia.org/wiki/Zcash','https://www.coindesk.com/business/2026/03/09/josh-swihart-s-zcash-open-development-lab-raises-usd25-million-in-seed-funding'] },
-  { from:'zooko', to:'cypherpunk', label:'Advisor',
-    sources:['https://en.wikipedia.org/wiki/Zcash','https://fortune.com/2017/12/18/jp-morgan-bitcoin-zcash-wilcox/'] },
-  { from:'cypherpunk', to:'zodl', label:'ZODL investor (seed)',
-    sources:['https://www.coindesk.com/business/2026/03/09/josh-swihart-s-zcash-open-development-lab-raises-usd25-million-in-seed-funding','https://cointelegraph.com/news/zodl-raises-25m-push-zcash-following-ecc-split'] },
+  // --- WINKLEVOSS NETWORK ---
+  {from:'winklevoss',to:'cypherpunk',l:'$50M investors & founders',
+    d:'Братья Уинклвоссы вложили $50M в создание Cypherpunk Technologies в ноябре 2025. Компания накопила ~1.7% всего circulating supply ZEC. Zooko Wilcox стал advisor компании.',
+    s:['https://en.wikipedia.org/wiki/Zcash','https://www.coindesk.com/business/2026/03/09/josh-swihart-s-zcash-open-development-lab-raises-usd25-million-in-seed-funding']},
+  {from:'winklevoss',to:'winklevoss_cap',l:'Founders of Wincklevoss Capital',
+    d:'Winklevoss Capital — семейный фонд/VC братьев Уинклвосс. Участвовал в seed раунде ZODL ($25M).',
+    s:['https://winklevosscapital.com/','https://en.wikipedia.org/wiki/Winklevoss_twins']},
+  {from:'winklevoss',to:'gemini',l:'Founders of Gemini',
+    d:'Братья Уинклвосс основали криптобиржу Gemini (2014). Gemini первой из регулируемых бирж получила NYDFS approval на листинг ZEC в мае 2018.',
+    s:['https://en.wikipedia.org/wiki/Gemini_(cryptocurrency_exchange)','https://en.wikipedia.org/wiki/Winklevoss_twins']},
+  {from:'winklevoss_cap',to:'zodl',l:'Seed investor in ZODL',
+    d:'Winklevoss Capital — один из инвесторов seed раунда ZODL на $25M в марте 2026. Это показывает консолидацию Уинклвоссов вокруг Zcash экосистемы через разные структуры.',
+    s:['https://www.coindesk.com/business/2026/03/09/josh-swihart-s-zcash-open-development-lab-raises-usd25-million-in-seed-funding','https://cointelegraph.com/news/zodl-raises-25m-push-zcash-following-ecc-split']},
+  {from:'gemini',to:'ecc',l:'ZEC listed May 2018',
+    d:'Gemini стала первой регулируемой биржей, получившей NYDFS approval на листинг ZEC. Это был важный шаг для легитимизации Zcash на US рынке.',
+    s:['https://en.wikipedia.org/wiki/Zcash','https://www.gemini.com/']},
+  {from:'winklevoss',to:'ecc',l:'Support via Gemini listing',
+    d:'Братья Уинклвосс поддержали Zcash через листинг ZEC на их бирже Gemini, создав легитимный канал доступа к токену для институциональных инвесторов.',
+    s:['https://en.wikipedia.org/wiki/Zcash','https://en.wikipedia.org/wiki/Winklevoss_twins']},
+  {from:'zooko',to:'cypherpunk',l:'Advisor',
+    d:'После ухода из ECC в декабре 2023, Zooko Wilcox стал advisor Cypherpunk Technologies (Winklevoss-backed), консультируя их по zk-технологиям и Zcash экосистеме.',
+    s:['https://en.wikipedia.org/wiki/Zcash','https://fortune.com/2017/12/18/jp-morgan-bitcoin-zcash-wilcox/']},
+  {from:'cypherpunk',to:'zodl',l:'Investor in ZODL seed',
+    d:'Cypherpunk Technologies также участвовала в seed-раунде ZODL как стратегический инвестор, усиливая связи между ZODL, CYPH и Winklevoss.',
+    s:['https://www.coindesk.com/business/2026/03/09/josh-swihart-s-zcash-open-development-lab-raises-usd25-million-in-seed-funding','https://cointelegraph.com/news/zodl-raises-25m-push-zcash-following-ecc-split']},
 
-  // ---- WINKLEVOSS NETWORK ----
-  { from:'winklevoss', to:'winklevoss_cap', label:'Capital arm founders',
-    sources:['https://winklevosscapital.com/','https://en.wikipedia.org/wiki/Winklevoss_twins'] },
-  { from:'winklevoss', to:'gemini', label:'Exchange founders',
-    sources:['https://en.wikipedia.org/wiki/Gemini_(cryptocurrency_exchange)','https://en.wikipedia.org/wiki/Winklevoss_twins'] },
-  { from:'winklevoss_cap', to:'zodl', label:'Seed investor',
-    sources:['https://www.coindesk.com/business/2026/03/09/josh-swihart-s-zcash-open-development-lab-raises-usd25-million-in-seed-funding','https://cointelegraph.com/news/zodl-raises-25m-push-zcash-following-ecc-split'] },
-  { from:'gemini', to:'ecc', label:'ZEC listed (May 2018)',
-    sources:['https://en.wikipedia.org/wiki/Zcash','https://www.gemini.com/'] },
-  { from:'winklevoss', to:'ecc', label:'Via Gemini ZEC listing',
-    sources:['https://en.wikipedia.org/wiki/Zcash','https://en.wikipedia.org/wiki/Winklevoss_twins'] },
+  // --- INVESTORS TO ZODL ---
+  {from:'paradigm',to:'zodl',l:'Lead investor $25M seed',
+    d:'Paradigm выступил одним из лид-инвесторов seed раунда ZODL на $25M. Paradigm известен deep tech подходом к крипто-инвестициям.',
+    s:['https://www.coindesk.com/business/2026/03/09/josh-swihart-s-zcash-open-development-lab-raises-usd25-million-in-seed-funding','https://cointelegraph.com/news/zodl-raises-25m-push-zcash-following-ecc-split']},
+  {from:'a16z',to:'zodl',l:'Seed investor',
+    d:'a16z crypto (Andreessen Horowitz) участвовал в seed раунде ZODL. Один из крупнейших крипто-фондов, поддерживающий Zcash экосистему.',
+    s:['https://www.coindesk.com/business/2026/03/09/josh-swihart-s-zcash-open-development-lab-raises-usd25-million-in-seed-funding','https://cointelegraph.com/news/zodl-raises-25m-push-zcash-following-ecc-split']},
+  {from:'coinbasev',to:'zodl',l:'Seed investor',
+    d:'Coinbase Ventures — корпоративный VC Coinbase, инвестировал в ZODL seed round подчёркивая strategic interest биржи в Zcash.',
+    s:['https://www.coindesk.com/business/2026/03/09/josh-swihart-s-zcash-open-development-lab-raises-usd25-million-in-seed-funding','https://cointelegraph.com/news/zodl-raises-25m-push-zcash-following-ecc-split']},
+  {from:'maelstrom',to:'zodl',l:'Seed investor',
+    d:'Maelstrom — фонд, основанный Артуром Хейсом (ex-CEO BitMEX). Инвестировал в ZODL seed round.',
+    s:['https://www.coindesk.com/business/2026/03/09/josh-swihart-s-zcash-open-development-lab-raises-usd25-million-in-seed-funding','https://cointelegraph.com/news/zodl-raises-25m-push-zcash-following-ecc-split']},
+  {from:'chapterone',to:'zodl',l:'Seed investor',
+    d:'Chapter One — ранний stage VC. Участвовал в seed раунде ZODL.',
+    s:['https://www.coindesk.com/business/2026/03/09/josh-swihart-s-zcash-open-development-lab-raises-usd25-million-in-seed-funding','https://cointelegraph.com/news/zodl-raises-25m-push-zcash-following-ecc-split']},
+  {from:'balaji',to:'zodl',l:'Angel investor',
+    d:'Баладжи Сринивасан (ex-CTO Coinbase) — angel инвестор в ZODL seed round. Ранее известен поддержкой Bitcoin и крипто-проектов.',
+    s:['https://www.coindesk.com/business/2026/03/09/josh-swihart-s-zcash-open-development-lab-raises-usd25-million-in-seed-funding','https://cointelegraph.com/news/zodl-raises-25m-push-zcash-following-ecc-split']},
+  {from:'dragonfly',to:'zodl',l:'Haseeb Qureshi as angel',
+    d:'Haseeb Qureshi, managing partner Dragonfly Capital, участвовал как angel инвестор в ZODL раунде. Dragonfly Capital — один из ведущих крипто-VC.',
+    s:['https://www.coindesk.com/business/2026/03/09/josh-swihart-s-zcash-open-development-lab-raises-usd25-million-in-seed-funding']},
+  {from:'naval',to:'ecc',l:'$3M+ seed investment (2015-16)',
+    d:'Навал Равикант инвестировал $3M+ в Zcash Company на seed стадии (2015-2016). Один из первых крупных сторонников Zcash в Кремниевой долине.',
+    s:['https://en.wikipedia.org/wiki/Zcash','https://www.nytimes.com/2016/10/24/business/dealbook/the-crypto-currency-that-wants-to-be-more-legitimate-than-bitcoin.html']},
 
-  // ---- INVESTORS → ZODL ----
-  { from:'paradigm', to:'zodl', label:'Seed investor',
-    sources:['https://www.coindesk.com/business/2026/03/09/josh-swihart-s-zcash-open-development-lab-raises-usd25-million-in-seed-funding','https://cointelegraph.com/news/zodl-raises-25m-push-zcash-following-ecc-split'] },
-  { from:'a16z', to:'zodl', label:'Seed investor',
-    sources:['https://www.coindesk.com/business/2026/03/09/josh-swihart-s-zcash-open-development-lab-raises-usd25-million-in-seed-funding','https://cointelegraph.com/news/zodl-raises-25m-push-zcash-following-ecc-split'] },
-  { from:'coinbasev', to:'zodl', label:'Seed investor',
-    sources:['https://www.coindesk.com/business/2026/03/09/josh-swihart-s-zcash-open-development-lab-raises-usd25-million-in-seed-funding','https://cointelegraph.com/news/zodl-raises-25m-push-zcash-following-ecc-split'] },
-  { from:'maelstrom', to:'zodl', label:'Seed investor',
-    sources:['https://www.coindesk.com/business/2026/03/09/josh-swihart-s-zcash-open-development-lab-raises-usd25-million-in-seed-funding','https://cointelegraph.com/news/zodl-raises-25m-push-zcash-following-ecc-split'] },
-  { from:'chapterone', to:'zodl', label:'Seed investor',
-    sources:['https://www.coindesk.com/business/2026/03/09/josh-swihart-s-zcash-open-development-lab-raises-usd25-million-in-seed-funding','https://cointelegraph.com/news/zodl-raises-25m-push-zcash-following-ecc-split'] },
-  { from:'balaji', to:'zodl', label:'Angel investor',
-    sources:['https://www.coindesk.com/business/2026/03/09/josh-swihart-s-zcash-open-development-lab-raises-usd25-million-in-seed-funding','https://cointelegraph.com/news/zodl-raises-25m-push-zcash-following-ecc-split'] },
-  { from:'dragonfly', to:'zodl', label:'Partner Haseeb Qureshi as angel',
-    sources:['https://www.coindesk.com/business/2026/03/09/josh-swihart-s-zcash-open-development-lab-raises-usd25-million-in-seed-funding'] },
+  // --- TRUSTED SETUP ---
+  {from:'snowden',to:'ev_mainnet',l:'Trusted setup participant (anon)',
+    d:'Эдвард Сноуден участвовал в trusted setup ceremony Zcash под псевдонимом "John Dobbertin". Его участие было раскрыто только в 2022 году.',
+    s:['https://en.wikipedia.org/wiki/Zcash','https://www.wired.com/story/edward-snowden-zcash-trusted-setup/']},
+  {from:'ptodd',to:'ev_mainnet',l:'Trusted setup participant',
+    d:'Питер Тодд (Bitcoin Core developer) участвовал в trusted setup ceremony Zcash, обеспечивая распределённое доверие при запуске сети.',
+    s:['https://en.wikipedia.org/wiki/Zcash','https://bitcointalk.org/']},
 
-  // ---- NAVAL ----
-  { from:'naval', to:'ecc', label:'$3M+ seed investment (2015-16)',
-    sources:['https://en.wikipedia.org/wiki/Zcash','https://www.nytimes.com/2016/10/24/business/dealbook/the-crypto-currency-that-wants-to-be-more-legitimate-than-bitcoin.html'] },
+  // --- EVENTS ---
+  {from:'mgreen',to:'ev_zerocoin',l:'Co-author Zerocoin',
+    d:'Мэттью Грин с аспирантами (Miers, Garman) опубликовал Zerocoin protocol в 2013 — первую академическую работу, предложившую shielded transactions на Bitcoin-подобном блокчейне.',
+    s:['https://en.wikipedia.org/wiki/Zcash','https://zerocoin.org/']},
+  {from:'imiers',to:'ev_zerocoin',l:'Co-author Zerocoin',d:'',s:['https://en.wikipedia.org/wiki/Zcash','https://zerocoin.org/']},
+  {from:'cgarman',to:'ev_zerocoin',l:'Co-author Zerocoin',d:'',s:['https://en.wikipedia.org/wiki/Zcash','https://zerocoin.org/']},
+  {from:'ev_zerocoin',to:'ev_zksnarks',l:'Predecessor tech',
+    d:'Zerocoin показал концепцию приватных транзакций на Bitcoin, но был неэффективным. zk-SNARKs (2013-2014) решили проблему масштабирования, позволив создать Zcash.',
+    s:['https://en.wikipedia.org/wiki/Zcash','https://eprint.iacr.org/2013/879']},
+  {from:'ev_zksnarks',to:'ev_mainnet',l:'Core privacy tech for Zcash',
+    d:'zk-SNARKs позволили Zcash запустить shielded (приватные) транзакции, что было невозможно для других криптовалют на тот момент. Главное технологическое преимущество Zcash.',
+    s:['https://en.wikipedia.org/wiki/Zcash','https://z.cash/technology/']},
+  {from:'ev_mainnet',to:'ecc',l:'Product of ECC',
+    d:'Zcash mainnet был запущен в октябре 2016 командой ECC (тогда Zcash Company). Блокчейн форкнулся от Bitcoin Core с добавлением zk-SNARKs.',
+    s:['https://en.wikipedia.org/wiki/Zcash','https://z.cash/']},
+  {from:'ev_split',to:'ev_zodl_seed',l:'Triggered ZODL creation',
+    d:'Уход всей core-команды ECC в январе 2026 привёл к созданию ZODL в марте 2026, которая привлекла $25M seed раунд. Фактически, команда перешла из ECC в ZODL целиком.',
+    s:['https://www.coindesk.com/business/2026/03/09/josh-swihart-s-zcash-open-development-lab-raises-usd25-million-in-seed-funding','https://cointelegraph.com/news/zodl-raises-25m-push-zcash-following-ecc-split']},
+  {from:'ev_sec',to:'ecc',l:'SEC cleared ZEC (no action)',
+    d:'SEC закрыла расследование в отношении Zcash в январе 2026 без предъявления претензий. Это был важный регуляторный сигнал, что Zcash не считается security.',
+    s:['https://en.wikipedia.org/wiki/Zcash','https://www.coindesk.com/policy/2026/01/15/sec-closes-zcash-investigation-with-no-action/']},
+  {from:'ev_zooko_exit',to:'ecc',l:'CEO stepped down',
+    d:'Zooko Wilcox покинул пост CEO ECC в декабре 2023 после 8 лет руководства. Его заменил Josh Swihart, который ранее был COO.',
+    s:['https://en.wikipedia.org/wiki/Zcash','https://cointelegraph.com/news/zooko-wilcox-steps-down-as-ecc-ceo']},
+  {from:'ev_zooko_exit',to:'jswihart',l:'Josh became CEO',
+    d:'После ухода Zooko, Josh Swihart стал CEO ECC (декабрь 2023 — январь 2026). Ранее занимал должность COO.',
+    s:['https://en.wikipedia.org/wiki/Zcash','https://cointelegraph.com/news/zcash-ecc-hires-josh-swihart-ceo']},
+  {from:'ev_gemini_list',to:'gemini',l:'Gemini listed ZEC',
+    d:'Gemini получила NYDFS approval на листинг ZEC в мае 2018. Это был первый случай, когда регулируемая биржа в США добавила privacy coin.',
+    s:['https://en.wikipedia.org/wiki/Zcash','https://www.gemini.com/']},
+  {from:'winklevoss',to:'ev_gemini_list',l:'Their exchange',
+    d:'Братья Уинклвосс как основатели Gemini сыграли ключевую роль в получении регуляторного одобрения для Zcash.',
+    s:['https://en.wikipedia.org/wiki/Gemini_(cryptocurrency_exchange)','https://en.wikipedia.org/wiki/Zcash']},
 
-  // ---- TRUSTED SETUP ----
-  { from:'snowden', to:'ev_mainnet', label:'Trusted setup (pseudonym)',
-    sources:['https://en.wikipedia.org/wiki/Zcash','https://www.wired.com/story/edward-snowden-zcash-trusted-setup/'] },
-  { from:'ptodd', to:'ev_mainnet', label:'Trusted setup participant',
-    sources:['https://en.wikipedia.org/wiki/Zcash','https://bitcointalk.org/'] },
+  // --- INTEGRATIONS ---
+  {from:'jpmorgan',to:'ecc',l:'ZK-proofs in Quorum (2017)',
+    d:'JPMorgan интегрировал zk-proof технологию Zcash в свой корпоративный блокчейн Quorum в 2017. Одно из первых крупных enterprise-применений zk-SNARKs.',
+    s:['https://fortune.com/2017/12/18/jp-morgan-bitcoin-zcash-wilcox/','https://www.coindesk.com/markets/2017/10/16/jp-morgan-and-zcash-partner-to-bring-privacy-to-blockchain/']},
+  {from:'near',to:'zodl',l:'Zodl ↔ NEAR Intents $600M+',
+    d:'Интеграция Zodl wallet с NEAR Intents позволила делать permissionless cross-chain swaps. Результат: $600M+ в ZEC свапов с октября 2025.',
+    s:['https://www.coindesk.com/markets/2025/10/09/near-intents-activity-spikes-as-zcash-s-zashi-wallet-taps-it-for-private-swaps','https://near.org/']},
+  {from:'cake',to:'ecc',l:'ZEC shielded support (Jan 2026)',
+    d:'Cake Wallet (популярный мобильный кошелёк для Monero) добавил поддержку Zcash shielded транзакций в январе 2026, расширяя доступность ZEC.',
+    s:['https://coinalertnews.com/news/2026/01/15/cake-wallet-adds-zcash-support-swaps','https://cakewallet.com/']},
+  {from:'swapkit',to:'ecc',l:'Non-custodial cross-chain swaps',
+    d:'SwapKit + Maya Protocol обеспечивают native non-custodial Zcash cross-chain swaps, позволяя обменивать ZEC без посредников.',
+    s:['https://swapkit.dev/blog/zcash-cross-chain-swaps-swapkit-near-intents/','https://mayaprotocol.org/']},
+  {from:'zprotocol',to:'ecc',l:'Satoshi Plus integration (Mar 2026)',
+    d:'Z Protocol и Core Foundation анонсировали интеграцию Satoshi Plus consensus механизма на Zcash в марте 2026, расширяя консенсусные возможности.',
+    s:['https://www.edgen.tech/news/post/z-protocol-to-integrate-satoshi-plus-on-zcash-in-2026-partnership','https://corefoundation.org/']},
+  {from:'humanrights',to:'ecc',l:'Accepts ZEC donations',
+    d:'Human Rights Foundation принимает пожертвования в Zcash, поддерживая миссию приватности как право человека.',
+    s:['https://en.wikipedia.org/wiki/Zcash','https://hrf.org/']},
+  {from:'freedompress',to:'ecc',l:'Accepts ZEC donations',
+    d:'Freedom of the Press Foundation принимает Zcash пожертвования для поддержки свободы прессы и защиты журналистов.',
+    s:['https://en.wikipedia.org/wiki/Zcash','https://freedom.press/']},
+  {from:'eff',to:'ecc',l:'Accepts ZEC donations',
+    d:'Electronic Frontier Foundation принимает пожертвования в Zcash, поддерживая цифровые права и приватность.',
+    s:['https://en.wikipedia.org/wiki/Zcash','https://eff.org/']},
+  {from:'grayscale',to:'ecc',l:'Zcash Trust → ETF filing',
+    d:'Grayscale Zcash Trust (GDLC) запущен в 2017. В 2026 подали заявку на конвертацию в ETF, что может открыть ZEC для институциональных инвесторов.',
+    s:['https://en.wikipedia.org/wiki/Zcash','https://grayscale.com/zcash-trust/']},
 
-  // ---- EVENTS CHAIN ----
-  { from:'mgreen', to:'ev_zerocoin', label:'Co-author',
-    sources:['https://en.wikipedia.org/wiki/Zcash','https://zerocoin.org/'] },
-  { from:'imiers', to:'ev_zerocoin', label:'Co-author',
-    sources:['https://en.wikipedia.org/wiki/Zcash','https://zerocoin.org/'] },
-  { from:'cgarman', to:'ev_zerocoin', label:'Co-author',
-    sources:['https://en.wikipedia.org/wiki/Zcash','https://zerocoin.org/'] },
-  { from:'ev_zerocoin', to:'ev_zksnarks', label:'Led to zk-SNARKs',
-    sources:['https://en.wikipedia.org/wiki/Zcash','https://eprint.iacr.org/2013/879'] },
-  { from:'ev_zksnarks', to:'ev_mainnet', label:'Enabled Zcash privacy',
-    sources:['https://en.wikipedia.org/wiki/Zcash','https://z.cash/technology/'] },
-  { from:'ev_mainnet', to:'ecc', label:'Product launch',
-    sources:['https://en.wikipedia.org/wiki/Zcash','https://z.cash/'] },
-  { from:'ev_split', to:'ev_zodl_seed', label:'Triggered ZODL creation',
-    sources:['https://www.coindesk.com/business/2026/03/09/josh-swihart-s-zcash-open-development-lab-raises-usd25-million-in-seed-funding','https://cointelegraph.com/news/zodl-raises-25m-push-zcash-following-ecc-split'] },
-  { from:'ev_sec', to:'ecc', label:'SEC cleared (no action)',
-    sources:['https://en.wikipedia.org/wiki/Zcash','https://www.coindesk.com/policy/2026/01/15/sec-closes-zcash-investigation-with-no-action/'] },
-  { from:'ev_zooko_exit', to:'ecc', label:'Zooko stepped down as CEO',
-    sources:['https://en.wikipedia.org/wiki/Zcash','https://cointelegraph.com/news/zooko-wilcox-steps-down-as-ecc-ceo'] },
-  { from:'ev_zooko_exit', to:'jswihart', label:'Josh Swihart became CEO',
-    sources:['https://en.wikipedia.org/wiki/Zcash','https://cointelegraph.com/news/zcash-ecc-hires-josh-swihart-ceo'] },
-  { from:'ev_gemini_list', to:'gemini', label:'NYDFS approval',
-    sources:['https://en.wikipedia.org/wiki/Zcash','https://www.gemini.com/'] },
-  { from:'winklevoss', to:'ev_gemini_list', label:'Their exchange listed ZEC',
-    sources:['https://en.wikipedia.org/wiki/Gemini_(cryptocurrency_exchange)','https://en.wikipedia.org/wiki/Zcash'] },
+  // --- MINING ---
+  {from:'foundry',to:'ecc',l:'ZEC mining pool (Apr 2026)',
+    d:'Foundry (принадлежит DCG, Digital Currency Group) запустил майнинг-пул для Zcash в апреле 2026, расширяя инфраструктуру майнинга.',
+    s:['https://en.wikipedia.org/wiki/Zcash','https://cointelegraph.com/news/foundry-starts-zcash-mining-pool']},
+  {from:'foundry',to:'ev_foundry',l:'Pool launch event',
+    d:'Запуск Foundry ZEC pool в апреле 2026 — важная веха для майнинг-инфраструктуры Zcash от одного из крупнейших майнеров в USA.',
+    s:['https://en.wikipedia.org/wiki/Zcash']},
+  {from:'viabtc',to:'ecc',l:'>50% hashrate dominance (Sep 2023)',
+    d:'ViaBTC захватила >50% хешрейта Zcash в сентябре 2023, вынудив Coinbase перевести ZEC в limit-only режим. Проблема централизации майнинга.',
+    s:['https://en.wikipedia.org/wiki/Zcash','https://www.coindesk.com/tech/2023/09/20/viabtc-zcash-hashrate-dominance/']},
 
-  // ---- INTEGRATIONS ----
-  { from:'jpmorgan', to:'ecc', label:'zk-proofs integrated in Quorum',
-    sources:['https://fortune.com/2017/12/18/jp-morgan-bitcoin-zcash-wilcox/','https://www.coindesk.com/markets/2017/10/16/jp-morgan-and-zcash-partner-to-bring-privacy-to-blockchain/'] },
-  { from:'near', to:'zodl', label:'Zodl ↔ NEAR Intents ($600M+ swaps)',
-    sources:['https://www.coindesk.com/markets/2025/10/09/near-intents-activity-spikes-as-zcash-s-zashi-wallet-taps-it-for-private-swaps','https://near.org/'] },
-  { from:'cake', to:'ecc', label:'ZEC shielded support',
-    sources:['https://coinalertnews.com/news/2026/01/15/cake-wallet-adds-zcash-support-swaps','https://cakewallet.com/'] },
-  { from:'swapkit', to:'ecc', label:'Non-custodial cross-chain swaps',
-    sources:['https://swapkit.dev/blog/zcash-cross-chain-swaps-swapkit-near-intents/','https://mayaprotocol.org/'] },
-  { from:'zprotocol', to:'ecc', label:'Satoshi Plus integration',
-    sources:['https://www.edgen.tech/news/post/z-protocol-to-integrate-satoshi-plus-on-zcash-in-2026-partnership','https://corefoundation.org/'] },
-  { from:'humanrights', to:'ecc', label:'Accepts ZEC donations',
-    sources:['https://en.wikipedia.org/wiki/Zcash','https://hrf.org/'] },
-  { from:'freedompress', to:'ecc', label:'Accepts ZEC donations',
-    sources:['https://en.wikipedia.org/wiki/Zcash','https://freedom.press/'] },
-  { from:'eff', to:'ecc', label:'Accepts ZEC donations',
-    sources:['https://en.wikipedia.org/wiki/Zcash','https://eff.org/'] },
-  { from:'grayscale', to:'ecc', label:'Zcash Trust, ETF filing 2026',
-    sources:['https://en.wikipedia.org/wiki/Zcash','https://grayscale.com/zcash-trust/'] },
+  // --- FORKS ---
+  {from:'ycash',to:'ecc',l:'Fork (Jul 2020)',
+    d:'Ycash — первый крупный форк Zcash (block 570,000, июль 2020). Отличие: убрана 20% dev fee, справедливое распределение. Max supply: 21M, те же Equihash параметры.',
+    s:['https://en.wikipedia.org/wiki/Zcash','https://ycash.xyz/']},
+  {from:'hush',to:'ecc',l:'Privacy fork',
+    d:'Hush — форк Zcash с более агрессивной приватностью. Запущен в 2016 вскоре после Zcash.',
+    s:['https://cryptoslate.com/hush/','https://myhush.org/']},
+  {from:'pirate',to:'ecc',l:'Derivative (mandatory shield)',
+    d:'Pirate Chain (ARRR) — форк Komodo (который сам форк Zcash). Отличительная особенность: все транзакции обязательны к shielded (приватны).',
+    s:['https://www.coingecko.com/en/coins/pirate-chain','https://piratechain.com/']},
+  {from:'cashz',to:'ecc',l:'Ex-team project (2026)',
+    d:'cashZ — новый проект кошелька от бывшей команды ECC (2026). Направление: user experience для приватных транзакций.',
+    s:['https://www.ainvest.com/news/zcash-ecosystem-fragmentation-rise-cashz-organizational-structure-scalability-investor-trust-2601/']},
 
-  // ---- MINING ----
-  { from:'foundry', to:'ecc', label:'ZEC mining pool (Apr 2026)',
-    sources:['https://en.wikipedia.org/wiki/Zcash','https://cointelegraph.com/news/foundry-starts-zcash-mining-pool'] },
-  { from:'foundry', to:'ev_foundry', label:'',
-    sources:['https://en.wikipedia.org/wiki/Zcash'] },
-  { from:'viabtc', to:'ecc', label:'>50% hashrate (Sep 2023)',
-    sources:['https://en.wikipedia.org/wiki/Zcash','https://www.coindesk.com/tech/2023/09/20/viabtc-zcash-hashrate-dominance/'] },
-
-  // ---- FORKS ----
-  { from:'ycash', to:'ecc', label:'Fork (Jul 2020)',
-    sources:['https://en.wikipedia.org/wiki/Zcash','https://ycash.xyz/'] },
-  { from:'hush', to:'ecc', label:'Fork (privacy)',
-    sources:['https://cryptoslate.com/hush/','https://myhush.org/'] },
-  { from:'pirate', to:'ecc', label:'Derivative (mandatory shield)',
-    sources:['https://www.coingecko.com/en/coins/pirate-chain','https://piratechain.com/'] },
-  { from:'cashz', to:'ecc', label:'Ex-ECC team wallet project',
-    sources:['https://www.ainvest.com/news/zcash-ecosystem-fragmentation-rise-cashz-organizational-structure-scalability-investor-trust-2601/'] },
-
-  // ---- FORKS AMONG THEMSELVES ----
-  { from:'pirate', to:'hush', label:'Both Zcash privacy forks',
-    sources:['https://www.coingecko.com/','https://cryptoslate.com/'] },
-  { from:'ycash', to:'hush', label:'Early Zcash forks',
-    sources:['https://en.wikipedia.org/wiki/Zcash','https://cryptoslate.com/'] },
+  // --- FORKS INTER-CONNECTIONS ---
+  {from:'pirate',to:'hush',l:'Both Zcash forks',
+    d:'Pirate Chain и Hush — два наиболее известных privacy-focused форка Zcash, каждый со своей философией приватности.',
+    s:['https://www.coingecko.com/','https://cryptoslate.com/']},
+  {from:'ycash',to:'hush',l:'Both early Zcash forks',
+    d:'Ycash и Hush — ранние форки Zcash, оба направленные на улучшение приватности и/или распределения.',
+    s:['https://en.wikipedia.org/wiki/Zcash','https://cryptoslate.com/']},
 ];
 
-// ===== DETAILS PER NODE =====
-const details = {
-  zooko: {
-    role:'Founder, ex-CEO ECC', current:'Advisor @ Cypherpunk Technologies',
-    highlights:['Co-created BLAKE2, BLAKE3','Founded Zcash Company (2015)','CEO until Dec 2023','Worked with David Chaum at DigiCash'],
-    sources:['https://en.wikipedia.org/wiki/Zooko_Wilcox-O%27Hearn','https://fortune.com/2017/12/18/jp-morgan-bitcoin-zcash-wilcox/']
-  },
-  mgreen: {
-    role:'Professor @ JHU', highlights:['Zerocoin protocol (2013)','PhD advisor to Miers & Garman'],
-    sources:['https://en.wikipedia.org/wiki/Zcash']
-  },
-  ecc: {
-    role:'Core Development Org', current:'Under Bootstrap, no core dev team (post-Jan 2026)',
-    highlights:['50+ employees (pre-2026)','Developed zcashd, Zashi/Zodl wallet','All core devs left Jan 2026'],
-    sources:['https://z.cash/ecosystem/electric-coin-company/','https://en.wikipedia.org/wiki/Zcash']
-  },
-  bootstrap: {
-    role:'Nonprofit, ECC Parent',
-    highlights:['Oversees Zcash mission','Changed employment terms (2025)','Led to mass team exit (Jan 2026)'],
-    sources:['https://en.wikipedia.org/wiki/Zcash','https://www.ainvest.com/news/zcash-ecosystem-fragmentation-rise-cashz-organizational-structure-scalability-investor-trust-2601/']
-  },
-  zodl: {
-    role:'New Core Dev Team', current:'Zodl wallet (ex-Zashi)',
-    highlights:['Founded Mar 2026 by Josh Swihart','Seed: $25M (Paradigm, a16z, CB Ventures)','Former ECC engineering team'],
-    sources:['https://www.coindesk.com/business/2026/03/09/josh-swihart-s-zcash-open-development-lab-raises-usd25-million-in-seed-funding','https://cointelegraph.com/news/zodl-raises-25m-push-zcash-following-ecc-split']
-  },
-  winklevoss: {
-    role:'Investors & Exchange Founders', current:'Gemini, Winklevoss Capital, Cypherpunk Technologies',
-    highlights:['Founded Gemini exchange','$50M into Cypherpunk Technologies','Winklevoss Capital invested in ZODL'],
-    sources:['https://en.wikipedia.org/wiki/Winklevoss_twins','https://en.wikipedia.org/wiki/Gemini_(cryptocurrency_exchange)']
-  },
-  winklevoss_cap: {
-    role:'Venture Capital', highlights:['Invested in ZODL seed','Founded by Winklevoss twins'],
-    sources:['https://winklevosscapital.com/','https://www.coindesk.com/business/2026/03/09/josh-swihart-s-zcash-open-development-lab-raises-usd25-million-in-seed-funding']
-  },
-  jswihart: {
-    role:'ex-CEO ECC → ZODL Founder', highlights:['CEO of ECC (2023-2026)','Left over Bootstrap conflict','Founded ZODL, raised $25M'],
-    sources:['https://www.coindesk.com/business/2026/03/09/josh-swihart-s-zcash-open-development-lab-raises-usd25-million-in-seed-funding','https://cointelegraph.com/news/zodl-raises-25m-push-zcash-following-ecc-split']
-  },
-  cypherpunk: {
-    role:'Digital Asset Treasury', highlights:['Founded Nov 2025','$50M from Winklevoss','~1.7% ZEC supply','Ticker: CYPH'],
-    sources:['https://www.coindesk.com/business/2026/03/09/josh-swihart-s-zcash-open-development-lab-raises-usd25-million-in-seed-funding','https://en.wikipedia.org/wiki/Zcash']
-  },
-  snowden: {
-    role:'Trusted Setup Participant', highlights:['Pseudonym: John Dobbertin','Revealed in 2022'],
-    sources:['https://en.wikipedia.org/wiki/Zcash','https://www.wired.com/story/edward-snowden-zcash-trusted-setup/']
-  },
-  near: {
-    role:'Cross-Chain Integration', highlights:['$600M+ ZEC swap volume','Permissionless via Intents','Oct 2025 launch'],
-    sources:['https://www.coindesk.com/markets/2025/10/09/near-intents-activity-spikes-as-zcash-s-zashi-wallet-taps-it-for-private-swaps']
-  },
-  gemini: {
-    role:'Exchange', highlights:['NYDFS approved ZEC (May 2018)','Founded by Winklevoss twins'],
-    sources:['https://en.wikipedia.org/wiki/Gemini_(cryptocurrency_exchange)','https://en.wikipedia.org/wiki/Zcash']
-  },
-  jpmorgan: {
-    role:'Enterprise Integration', highlights:['zk-proofs in Quorum (2017)','Early enterprise adoption of ZK tech'],
-    sources:['https://fortune.com/2017/12/18/jp-morgan-bitcoin-zcash-wilcox/','https://www.coindesk.com/markets/2017/10/16/jp-morgan-and-zcash-partner-to-bring-privacy-to-blockchain/']
-  },
-  foundry: {
-    role:'Mining Pool (DCG)', highlights:['Launched ZEC pool Apr 2026','Part of Digital Currency Group'],
-    sources:['https://en.wikipedia.org/wiki/Zcash','https://foundrydigital.com/']
-  },
-  grayscale: {
-    role:'Investment Trust', highlights:['Launched 2017','Filed for ETF conversion (2026)'],
-    sources:['https://en.wikipedia.org/wiki/Zcash','https://grayscale.com/zcash-trust/']
-  },
-  ev_mainnet: {
-    role:'Launch Event', highlights:['Oct 28, 2016','Block reward: 3.125 ZEC','75s block time'],
-    sources:['https://en.wikipedia.org/wiki/Zcash']
-  },
-  ev_split: {
-    role:'Organizational Split', highlights:['Entire dev team left','Bootstrap conflict','Led to ZODL creation (Jan 2026)'],
-    sources:['https://www.ainvest.com/news/zcash-ecosystem-fragmentation-rise-cashz-organizational-structure-scalability-investor-trust-2601/']
-  },
-  ev_zodl_seed: {
-    role:'Funding Event', highlights:['$25M seed (Mar 2026)','Paradigm, a16z, CB Ventures lead'],
-    sources:['https://www.coindesk.com/business/2026/03/09/josh-swihart-s-zcash-open-development-lab-raises-usd25-million-in-seed-funding']
-  },
-  ev_sec: {
-    role:'Regulatory Event', highlights:['SEC closed investigation (Jan 2026)','No action taken'],
-    sources:['https://en.wikipedia.org/wiki/Zcash','https://www.coindesk.com/policy/2026/01/15/sec-closes-zcash-investigation-with-no-action/']
-  },
-  ev_zerocoin: {
-    role:'Academic Research', highlights:['2013 @ Johns Hopkins','Precursor to Zcash'],
-    sources:['https://en.wikipedia.org/wiki/Zcash','https://zerocoin.org/']
-  },
-  ev_zksnarks: {
-    role:'Core Technology', highlights:['2013-2014','MIT + Technion + UC Berkeley','Enables shielded transactions'],
-    sources:['https://en.wikipedia.org/wiki/Zcash']
-  },
+// DETAILS for nodes
+const DET = {
+  zooko:{role:'Founder, ex-CEO ECC',cur:'Advisor @ Cypherpunk Technologies',
+    h:['Co-created BLAKE2, BLAKE3','Founded Zcash Company (2015)','CEO until Dec 2023','Worked with David Chaum at DigiCash'],
+    s:['https://en.wikipedia.org/wiki/Zooko_Wilcox-O%27Hearn','https://fortune.com/2017/12/18/jp-morgan-bitcoin-zcash-wilcox/']},
+  winklevoss:{role:'Investors & Exchange Founders',cur:'Gemini, Winklevoss Capital, Cypherpunk Technologies',
+    h:['Founded Gemini exchange','$50M into Cypherpunk Technologies','Winklevoss Capital invested in ZODL'],
+    s:['https://en.wikipedia.org/wiki/Winklevoss_twins','https://en.wikipedia.org/wiki/Gemini_(cryptocurrency_exchange)']},
+  ecc:{role:'Core Development Org',cur:'Under Bootstrap, no core dev team (post-Jan 2026)',
+    h:['50+ employees (pre-2026)','Developed zcashd, Zashi/Zodl wallet','All devs left Jan 2026'],
+    s:['https://z.cash/ecosystem/electric-coin-company/','https://en.wikipedia.org/wiki/Zcash']},
+  zodl:{role:'New Core Dev Team',cur:'Zodl wallet (ex-Zashi)',
+    h:['Founded Mar 2026 by Josh Swihart','Seed: $25M (Paradigm, a16z, CB Ventures)','Former ECC engineering team'],
+    s:['https://www.coindesk.com/business/2026/03/09/josh-swihart-s-zcash-open-development-lab-raises-usd25-million-in-seed-funding','https://cointelegraph.com/news/zodl-raises-25m-push-zcash-following-ecc-split']},
+  bootstrap:{role:'Nonprofit, ECC Parent',h:['Oversees Zcash mission','Changed employment terms (2025)','Led to mass team exit Jan 2026'],
+    s:['https://en.wikipedia.org/wiki/Zcash','https://www.ainvest.com/news/zcash-ecosystem-fragmentation-rise-cashz-organizational-structure-scalability-investor-trust-2601/']},
+  jswihart:{role:'ex-CEO ECC → ZODL Founder',h:['CEO of ECC (2023-2026)','Left over Bootstrap conflict','Founded ZODL, raised $25M'],
+    s:['https://www.coindesk.com/business/2026/03/09/josh-swihart-s-zcash-open-development-lab-raises-usd25-million-in-seed-funding','https://cointelegraph.com/news/zodl-raises-25m-push-zcash-following-ecc-split']},
+  cypherpunk:{role:'Digital Asset Treasury',h:['Founded Nov 2025','$50M from Winklevoss','~1.7% ZEC supply','Ticker: CYPH'],
+    s:['https://www.coindesk.com/business/2026/03/09/josh-swihart-s-zcash-open-development-lab-raises-usd25-million-in-seed-funding','https://en.wikipedia.org/wiki/Zcash']},
+  snowden:{role:'Trusted Setup Participant',h:['Pseudonym: John Dobbertin','Revealed in 2022'],
+    s:['https://en.wikipedia.org/wiki/Zcash','https://www.wired.com/story/edward-snowden-zcash-trusted-setup/']},
+  near:{role:'Cross-Chain Integration',h:['$600M+ ZEC swap volume','Permissionless via Intents','Oct 2025 launch'],
+    s:['https://www.coindesk.com/markets/2025/10/09/near-intents-activity-spikes-as-zcash-s-zashi-wallet-taps-it-for-private-swaps']},
+  gemini:{role:'Exchange',h:['NYDFS approved ZEC (May 2018)','Founded by Winklevoss twins'],
+    s:['https://en.wikipedia.org/wiki/Gemini_(cryptocurrency_exchange)','https://en.wikipedia.org/wiki/Zcash']},
+  jpmorgan:{role:'Enterprise Integration',h:['zk-proofs in Quorum (2017)','Early enterprise ZK adoption'],
+    s:['https://fortune.com/2017/12/18/jp-morgan-bitcoin-zcash-wilcox/','https://www.coindesk.com/markets/2017/10/16/jp-morgan-and-zcash-partner-to-bring-privacy-to-blockchain/']},
+  foundry:{role:'Mining Pool (DCG)',h:['Launched ZEC pool Apr 2026','Part of Digital Currency Group'],
+    s:['https://en.wikipedia.org/wiki/Zcash','https://foundrydigital.com/']},
+  grayscale:{role:'Investment Trust',h:['Launched 2017','Filed for ETF conversion (2026)'],
+    s:['https://en.wikipedia.org/wiki/Zcash','https://grayscale.com/zcash-trust/']},
+  ev_mainnet:{role:'Launch Event',h:['Oct 28, 2016','Block reward: 3.125 ZEC','75s block time'],
+    s:['https://en.wikipedia.org/wiki/Zcash']},
+  ev_split:{role:'Organizational Split',h:['Entire dev team left','Bootstrap conflict','Led to ZODL creation Jan 2026'],
+    s:['https://www.ainvest.com/news/zcash-ecosystem-fragmentation-rise-cashz-organizational-structure-scalability-investor-trust-2601/']},
+  ev_zodl_seed:{role:'Funding Event',h:['$25M seed (Mar 2026)','Paradigm, a16z, CB Ventures lead'],
+    s:['https://www.coindesk.com/business/2026/03/09/josh-swihart-s-zcash-open-development-lab-raises-usd25-million-in-seed-funding']},
+  ev_sec:{role:'Regulatory Event',h:['SEC closed investigation (Jan 2026)','No action taken'],
+    s:['https://en.wikipedia.org/wiki/Zcash','https://www.coindesk.com/policy/2026/01/15/sec-closes-zcash-investigation-with-no-action/']},
+  naval:{role:'Angel Investor',h:['$3M+ seed investment','2015-2016'],
+    s:['https://en.wikipedia.org/wiki/Zcash','https://www.nytimes.com/2016/10/24/business/dealbook/the-crypto-currency-that-wants-to-be-more-legitimate-than-bitcoin.html']},
 };
 
-// ===== TIMELINE =====
-const timelineData = [
-  { year:'2013', event:'Zerocoin protocol (Johns Hopkins)' },
-  { year:'2013-2014', event:'zk-SNARKs development (MIT + Technion)' },
-  { year:'2015', event:'Zcash Company founded by Zooko Wilcox' },
-  { year:'Oct 2016', event:'Zcash mainnet launch (block reward: 3.125 ZEC)' },
-  { year:'2017', event:'JPMorgan integrates zk-proofs into Quorum' },
-  { year:'2017', event:'Grayscale Zcash Trust launched' },
-  { year:'May 2018', event:'Gemini lists ZEC (NYDFS approved)' },
-  { year:'2019', event:'Zcash Company → ECC (rebrand) + Halo invented' },
-  { year:'Jul 2020', event:'Ycash fork' },
-  { year:'2020', event:'ECC becomes 501(c)(3) subsidiary of Bootstrap' },
-  { year:'2022', event:'Snowden reveals Zcash trusted setup participation' },
-  { year:'Sep 2023', event:'ViaBTC >50% hashrate → Coinbase limit-only mode' },
-  { year:'Dec 2023', event:'Zooko steps down, Josh Swihart becomes ECC CEO' },
-  { year:'Oct 2025', event:'Zashi (Zodl) ↔ NEAR Intents — $600M+ in ZEC swaps' },
-  { year:'Nov 2025', event:'Winklevoss launch Cypherpunk Technologies ($50M)' },
-  { year:'Jan 2026', event:'SEC closes Zcash investigation (no action)' },
-  { year:'Jan 2026', event:'Entire ECC core team exits over Bootstrap conflict' },
-  { year:'Feb 2026', event:'Zashi wallet rebrands to Zodl' },
-  { year:'Mar 2026', event:'ZODL raises $25M seed (Paradigm, a16z, CB Ventures)' },
-  { year:'Apr 2026', event:'Foundry launches Zcash mining pool' },
-  { year:'2026', event:'Grayscale files for Zcash Trust → ETF conversion' },
+const TIMELINE = [
+  {y:'2013',e:'Zerocoin protocol опубликован (Johns Hopkins)'},
+  {y:'2013-2014',e:'zk-SNARKs разработка (MIT + Technion + UC Berkeley)'},
+  {y:'2015',e:'Zcash Company основана Zooko Wilcox'},
+  {y:'Oct 2016',e:'Zcash mainnet запущен (block reward: 3.125 ZEC)'},
+  {y:'2017',e:'JPMorgan интегрирует zk-proofs в Quorum'},
+  {y:'2017',e:'Grayscale Zcash Trust запущен'},
+  {y:'May 2018',e:'Gemini листит ZEC (NYDFS approval — первый regulated privacy coin)'},
+  {y:'2019',e:'Zcash Company → ECC (rebrand) + Sean Bowe изобретает Halo'},
+  {y:'Jul 2020',e:'Ycash fork (блок 570,000)'},
+  {y:'2020',e:'ECC становится 501(c)(3) дочкой Bootstrap'},
+  {y:'2022',e:'Сноуден раскрывает участие в trusted setup Zcash'},
+  {y:'Sep 2023',e:'ViaBTC >50% hashrate → Coinbase limit-only mode'},
+  {y:'Dec 2023',e:'Zooko уходит с CEO, Josh Swihart становится CEO ECC'},
+  {y:'Oct 2025',e:'Zashi (Zodl) ↔ NEAR Intents — $600M+ ZEC swaps'},
+  {y:'Nov 2025',e:'Winklevoss запускают Cypherpunk Technologies ($50M)'},
+  {y:'Jan 2026',e:'SEC закрывает расследование по Zcash (no action)'},
+  {y:'Jan 2026',e:'Вся ECC core team уходит из-за Bootstrap конфликта'},
+  {y:'Feb 2026',e:'Zashi → Zodl (rebrand)'},
+  {y:'Mar 2026',e:'ZODL seed round $25M (Paradigm, a16z, CB Ventures)'},
+  {y:'Apr 2026',e:'Foundry запускает Zcash mining pool'},
+  {y:'2026',e:'Grayscale подаёт на конвертацию Zcash Trust → ETF'},
 ];
 
-// ===== GRAPH =====
-let network = null;
-const colorMap = { person:'#4a9eff', org:'#f7931a', project:'#7c3aed', investor:'#10b981', integration:'#ec4899', event:'#f59e0b' };
+// vis-network setup
+let net = null;
+const C = {person:'#4a9eff',org:'#f7931a',project:'#7c3aed',investor:'#10b981',integration:'#ec4899',event:'#f59e0b'};
+const nmap = {}; NODES.forEach(n=>{nmap[n.id]=n.l.replace(/\n/g,' ')});
 
 // Build reverse relation lookup
-const relByNode = {};
-edgesDef.forEach(e => {
-  if (!relByNode[e.from]) relByNode[e.from] = [];
-  relByNode[e.from].push({ dir:'out', to:e.to, label:e.label, sources:e.sources });
-  if (!relByNode[e.to]) relByNode[e.to] = [];
-  relByNode[e.to].push({ dir:'in', from:e.from, label:e.label, sources:e.sources });
+const relMap = {};
+EDGES.forEach(e => {
+  if(!relMap[e.from]) relMap[e.from]=[];
+  relMap[e.from].push({dir:'out',to:e.to,l:e.l,d:e.d,s:e.s});
+  if(!relMap[e.to]) relMap[e.to]=[];
+  relMap[e.to].push({dir:'in',from:e.from,l:e.l,d:e.d,s:e.s});
 });
 
-function initGraph() {
-  const nodes = new vis.DataSet(nodesData.map(n => ({
-    id:n.id, label:n.label, group:n.g,
-    color:{ background:colorMap[n.g]||'#888', border:'#fff', highlight:{ background:'#fff', border:colorMap[n.g]||'#888' } },
-    font:{ color:'#e0e0e0', strokeWidth:2, strokeColor:'#0f0f1a', size:11 },
+function initGraph(){
+  const nodes = new vis.DataSet(NODES.map(n=>({
+    id:n.id,label:n.l,group:n.g,
+    color:{background:C[n.g]||'#888',border:'#fff',highlight:{background:'#fff',border:C[n.g]||'#888'}},
+    font:{color:'#e0e0e0',strokeWidth:2,strokeColor:'#0f0f1a',size:11},
     borderWidth:1,
-    size: n.g==='event' ? 18 : (n.g==='project' ? 20 : 26),
-    shape: n.g==='event' ? 'diamond' : (n.g==='org' ? 'box' : 'ellipse'),
-    mass: n.g==='org' ? 3 : 2,
+    size:n.g==='event'?18:(n.g==='project'?20:26),
+    shape:n.g==='event'?'diamond':(n.g==='org'?'box':'ellipse'),
+    mass:n.g==='org'?3:2,
   })));
 
-  const edges = new vis.DataSet(edgesDef.map(e => ({
-    from:e.from, to:e.to, label:e.label||'',
-    title: (e.sources||[]).map((s,i) => '['+(i+1)+'] '+s).join('\n'),
-    color:{ color:'#555', highlight:'#f7931a', hover:'#f7931a' },
+  const edges = new vis.DataSet(EDGES.map(e=>({
+    from:e.from,to:e.to,label:e.l,
+    title: (e.d||'') + '\n\n📚 Sources:\n' + (e.s||['no source']).map((s,i)=>'['+(i+1)+'] '+s).join('\n'),
+    color:{color:'#555',highlight:'#f7931a',hover:'#f7931a'},
     width:1.5,
-    font:{ size:9, color:'#888', strokeWidth:2, strokeColor:'#0f0f1a', align:'middle' },
-    dashes: false,
-    smooth:{ type:'curvedCW', roundness:0.1 },
-    arrows:{ to:{ enabled:true, scaleFactor:0.6 } },
+    font:{size:9,color:'#888',strokeWidth:2,strokeColor:'#0f0f1a',align:'middle'},
+    smooth:{type:'curvedCW',roundness:0.1},
+    arrows:{to:{enabled:true,scaleFactor:0.6}},
   })));
 
-  const container = document.getElementById('graph-container');
-  const data = { nodes, edges };
-  const options = {
-    physics: {
-      solver:'forceAtlas2Based',
-      forceAtlas2Based:{ gravitationalConstant:-40, centralGravity:0.005, springLength:180, springConstant:0.02, damping:0.4 },
-      stabilization:{ iterations:200 },
-    },
-    layout:{ improvedLayout:true },
-    interaction:{ hover:true, tooltipDelay:300, keyboard:true },
-    edges:{ smooth:{ type:'curvedCW' } },
-  };
+  net = new vis.Network(document.getElementById('graph-container'),{nodes,edges},{
+    physics:{solver:'forceAtlas2Based',forceAtlas2Based:{gravitationalConstant:-40,centralGravity:0.005,springLength:180,springConstant:0.02,damping:0.4},stabilization:{iterations:200}},
+    layout:{improvedLayout:true},
+    interaction:{hover:true,tooltipDelay:300,keyboard:true},
+    edges:{smooth:{type:'curvedCW'}},
+  });
+  document.getElementById('loading').style.display='none';
 
-  network = new vis.Network(container, data, options);
-  document.getElementById('loading').style.display = 'none';
-
-  network.on('click', function(params) {
-    if (params.nodes.length > 0) showNode(params.nodes[0]);
-    else if (params.edges.length > 0) showEdge(params.edges[0]);
+  net.on('click',function(p){
+    if(p.nodes.length>0) showNode(p.nodes[0]);
+    else if(p.edges.length>0) showEdgeFromIds(p.edges[0]);
   });
 }
 
-function zoomIn() { if(network) network.moveScale(1.3); }
-function zoomOut() { if(network) network.moveScale(0.7); }
-function zoomFit() { if(network) network.fit(); }
-function resetView() { if(network) { network.fit(); network.moveTo({ scale:1 }); } }
+function zoomIn(){if(net)net.moveScale(1.3)}
+function zoomOut(){if(net)net.moveScale(0.7)}
+function zoomFit(){if(net)net.fit()}
+function resetView(){if(net){net.fit();net.moveTo({scale:1})}}
 
-function showNode(id) {
-  const node = nodesData.find(n => n.id === id);
-  if (!node) return;
-  const d = details[id];
-  const label = node.label.replace(/\n/g,' ');
-
-  // Entity tab
-  let html = `<h3>${label}</h3>`;
-  html += `<div class="detail-field"><div class="label">Type</div><div class="value">${node.g}</div></div>`;
-  if (d) {
-    html += `<div class="detail-field"><div class="label">Role</div><div class="value">${d.role || node.desc}</div></div>`;
-    html += `<div class="detail-field"><div class="label">Description</div><div class="value">${node.desc}</div></div>`;
-    if (d.current) html += `<div class="detail-field"><div class="label">Current Status</div><div class="value">${d.current}</div></div>`;
-    if (d.highlights) {
-      html += `<h4>Highlights</h4>`;
-      d.highlights.forEach(h => { html += `<div style="font-size:12px;color:#ccc;margin:2px 0">• ${h}</div>`; });
-    }
+function showNode(id){
+  const n = NODES.find(x=>x.id===id); if(!n)return;
+  const d = DET[id]; const lbl = n.l.replace(/\n/g,' ');
+  let h = `<h3>${lbl}</h3><div class="df"><div class="lbl">Type</div><div class="val">${n.g}</div></div>`;
+  if(d){
+    h+=`<div class="df"><div class="lbl">Role</div><div class="val">${d.role||n.d}</div></div>`;
+    h+=`<div class="df"><div class="lbl">Description</div><div class="val">${n.d}</div></div>`;
+    if(d.cur) h+=`<div class="df"><div class="lbl">Current Status</div><div class="val">${d.cur}</div></div>`;
+    if(d.h) {h+=`<h4>Highlights</h4>`; d.h.forEach(x=>{h+=`<div style="font-size:12px;color:#ccc;margin:2px 0">• ${x}</div>`})}
   } else {
-    html += `<div class="detail-field"><div class="label">Description</div><div class="value">${node.desc}</div></div>`;
+    h+=`<div class="df"><div class="lbl">Description</div><div class="val">${n.d}</div></div>`;
   }
-  document.getElementById('tab-entity').innerHTML = html;
+  document.getElementById('tab-entity').innerHTML = h;
 
-  // Relations tab
-  const rels = relByNode[id] || [];
-  const nameMap = {};
-  nodesData.forEach(n => { nameMap[n.id] = n.label.replace(/\n/g,' '); });
-  let rhtml = `<h3>🔗 ${label} — Connections</h3>`;
-  if (rels.length === 0) {
-    rhtml += `<div class="empty-state">No connections</div>`;
-  } else {
-    rels.forEach(r => {
-      const target = r.dir === 'out' ? nameMap[r.to] : nameMap[r.from];
-      const dirLabel = r.dir === 'out' ? '→' : '←';
-      rhtml += `<div class="relation-card">`;
-      rhtml += `<div class="target">${dirLabel} ${target}</div>`;
-      rhtml += `<div class="type">${r.label || 'related'}</div>`;
-      if (r.sources && r.sources.length > 0) {
-        rhtml += `<div class="src">Sources: ${r.sources.map((s,i) => `<a href="${s}" target="_blank">[${i+1}]</a>`).join(' ')}</div>`;
-      }
-      rhtml += `</div>`;
-    });
-  }
-  document.getElementById('tab-relations').innerHTML = rhtml;
+  const rels = relMap[id]||[];
+  let rh = `<h3>🔗 Connections for ${lbl}</h3>`;
+  if(rels.length===0) rh+=`<div class="empty-state">No connections</div>`;
+  else rels.forEach(r=>{
+    const target = r.dir==='out'?nmap[r.to]:nmap[r.from];
+    const dirSym = r.dir==='out'?'→':'←';
+    rh+=`<div class="rc"><div class="target">${dirSym} ${target}</div>`;
+    rh+=`<div class="desc">${r.d||r.l||'related'}</div>`;
+    rh+=`<span class="srclbl">📚 Sources:</span><div class="src">`;
+    (r.s||[]).forEach((s,i)=>{rh+=`<a href="${s}" target="_blank">[${i+1}]</a> `});
+    rh+=`</div></div>`;
+  });
+  document.getElementById('tab-relations').innerHTML = rh;
 
-  // Sources tab
-  if (d && d.sources) {
-    let shtml = `<h3>📚 Sources — ${label}</h3>`;
-    d.sources.forEach((s,i) => {
-      shtml += `<div style="margin:4px 0;font-size:12px"><a href="${s}" target="_blank">[${i+1}] ${s}</a></div>`;
-    });
-    document.getElementById('tab-sources').innerHTML = shtml;
-  } else {
-    document.getElementById('tab-sources').innerHTML = `<h3>📚 Sources</h3><div class="empty-state">No source data for this node</div>`;
-  }
+  if(d&&d.s){
+    let sh = `<h3>📚 Sources — ${lbl}</h3>`;
+    d.s.forEach((s,i)=>{sh+=`<div style="margin:4px 0;font-size:12px"><a href="${s}" target="_blank">[${i+1}] ${s}</a></div>`});
+    document.getElementById('tab-sources').innerHTML = sh;
+  } else document.getElementById('tab-sources').innerHTML = `<h3>📚 Sources</h3><div class="empty-state">No sources for this node</div>`;
 
   switchTab('entity');
 }
 
-function showEdge(edgeId) {
-  // vis-network doesn't expose edge data easily via click callback
-  // We handle it in the click handler
+function showEdgeFromIds(edgeId){
+  // find the edge data
+  const e = EDGES.find((x,i)=>i===edgeId || (x.from+'>'+x.to)===edgeId);
+  if(!e) return;
+  const fromName = nmap[e.from] || e.from;
+  const toName = nmap[e.to] || e.to;
+  let h = `<h3>🔗 ${fromName} → ${toName}</h3>`;
+  h += `<div class="df"><div class="lbl">Relation Type</div><div class="val">${e.l||'unspecified'}</div></div>`;
+  h += `<div class="df" style="margin-top:6px"><div class="lbl">Пояснение</div><div class="val">${e.d||'N/A'}</div></div>`;
+  h += `<h4>📚 Sources (${(e.s||[]).length})</h4>`;
+  (e.s||[]).forEach((s,i)=>{h+=`<div style="margin:4px 0;font-size:12px"><a href="${s}" target="_blank">[${i+1}] ${s}</a></div>`});
+  document.getElementById('tab-entity').innerHTML = h;
+  switchTab('entity');
 }
 
-function showTimeline() {
-  let html = `<h3>📅 Timeline — Zcash</h3>`;
-  timelineData.forEach(t => {
-    html += `<div class="timeline-item"><div class="year">${t.year}</div><div class="event">${t.event}</div></div>`;
-  });
-  document.getElementById('tab-timeline').innerHTML = html;
+function showTimeline(){
+  let h = `<h3>📅 Timeline — Zcash</h3>`;
+  TIMELINE.forEach(t=>{h+=`<div class="tl"><div class="yr">${t.y}</div><div class="ev">${t.e}</div></div>`});
+  document.getElementById('tab-timeline').innerHTML = h;
 }
 
-function switchTab(tab) {
-  document.querySelectorAll('.tabs button').forEach((b,i) => {
-    b.classList.toggle('active', ['entity','relations','sources','timeline'][i] === tab);
-  });
-  ['tab-entity','tab-relations','tab-sources','tab-timeline'].forEach(id => {
-    document.getElementById(id).classList.toggle('active', id === 'tab-'+tab);
-  });
+function switchTab(t){
+  document.querySelectorAll('.tabs button').forEach((b,i)=>{b.classList.toggle('active',['entity','relations','sources','timeline'][i]===t)});
+  ['tab-entity','tab-relations','tab-sources','tab-timeline'].forEach(id=>{document.getElementById(id).classList.toggle('active',id==='tab-'+t)});
 }
 </script>
 </body>
